@@ -10,6 +10,8 @@ use Contao\System;
 use DanielGausi\CalendarEditorBundle\Models\CalendarModelEdit;
 use DanielGausi\CalendarEditorBundle\Services\CheckAuthService;
 use FrontendTemplate;
+use Contao\CoreBundle\Routing\ScopeMatcher;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 class ModuleEventReaderEdit extends Events
 {
@@ -19,6 +21,17 @@ class ModuleEventReaderEdit extends Events
 	 * @var string
 	 */
 	protected $strTemplate = 'mod_event_ReaderEditLink';
+
+	public function __construct(private ScopeMatcher $scopeMatcher) {
+    }
+
+    public function isBackend() {
+        return $this->scopeMatcher->isBackendRequest();
+    }
+
+    public function isFrontend() {
+        return $this->scopeMatcher->isFrontendRequest();
+    }
 	
 	/**
 	 * Display a wildcard in the back end
@@ -26,7 +39,7 @@ class ModuleEventReaderEdit extends Events
 	 */
 	public function generate()
 	{
-		if (TL_MODE == 'BE') {
+		if ( $this->isBackendRequest() ) {
 			$objTemplate = new BackendTemplate('be_wildcard');
 
 			$objTemplate->wildcard = '### EVENT READER EDIT LINK ###';
