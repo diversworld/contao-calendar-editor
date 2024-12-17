@@ -2,18 +2,20 @@
 
 namespace DanielGausi\CalendarEditorBundle\Modules;
 
-use BackendTemplate;
+use Contao\BackendTemplate;
 use Contao\Email;
 use Contao\Input;
 use Contao\StringUtil;
 use Contao\System;
-use ContentModel;
+use Contao\ContentModel;
 use DanielGausi\CalendarEditorBundle\Models\CalendarEventsModelEdit;
 use DanielGausi\CalendarEditorBundle\Models\CalendarModelEdit;
 use DanielGausi\CalendarEditorBundle\Services\CheckAuthService;
-use Date;
-use Events;
-use FrontendTemplate;
+use Contao\Date;
+use Contao\Events;
+use Contao\FrontendTemplate;
+use Contao\CoreBundle\Routing\ScopeMatcher;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 class ModuleEventEditor extends Events
 {
@@ -25,13 +27,24 @@ class ModuleEventEditor extends Events
     protected $strTemplate = 'eventEdit_default';
     protected string $errorString = '';
     protected array $allowedCalendars = [];
+    
+    public function __construct(private ScopeMatcher $scopeMatcher) {
+    }
+
+    public function isBackend() {
+        return $this->scopeMatcher->isBackendRequest();
+    }
+
+    public function isFrontend() {
+        return $this->scopeMatcher->isFrontendRequest();
+    }
 
     /**
      * generate Module
      */
     public function generate()
     {
-        if (TL_MODE == 'BE') {
+        if ( $this->isBackendRequest()) {
             $objTemplate = new BackendTemplate('be_wildcard');
             $objTemplate->wildcard = '### EVENT EDITOR ###';
             $objTemplate->title = $this->headline;
@@ -1072,7 +1085,9 @@ class ModuleEventEditor extends Events
             }
         }
 
-        if (!FE_USER_LOGGED_IN) {
+        $hasFrontendUser = System::getContainer()->get('contao.security.token_checker')->hasFrontendUser();
+        
+        if (!$hasFrontendUser) {
             $fields['captcha'] = [
                 'name' => 'captcha',
                 'inputType' => 'captcha',
