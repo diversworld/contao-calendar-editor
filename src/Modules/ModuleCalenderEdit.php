@@ -2,14 +2,17 @@
 
 namespace DanielGausi\CalendarEditorBundle\Modules;
 
-use BackendTemplate;
+use Contao\BackendTemplate;
 use Contao\Date;
 use Contao\PageModel;
 use Contao\StringUtil;
 use Contao\System;
 use DanielGausi\CalendarEditorBundle\Models\CalendarModelEdit;
 use DanielGausi\CalendarEditorBundle\Services\CheckAuthService;
-use ModuleCalendar;
+use Contao\ModuleCalendar;
+use Contao\CoreBundle\Routing\ScopeMatcher;
+use Symfony\Component\HttpFoundation\RequestStack;
+
 
 class ModuleCalenderEdit extends ModuleCalendar
 {
@@ -17,7 +20,17 @@ class ModuleCalenderEdit extends ModuleCalendar
 	protected bool $allowElapsedEvents;
 	protected bool $allowEditEvents;
 		
-	
+    public function __construct(private ScopeMatcher $scopeMatcher) {
+    }
+
+public function isBackend() {
+        return $this->scopeMatcher->isBackendRequest();
+    }
+
+    public function isFrontend() {
+        return $this->scopeMatcher->isFrontendRequest();
+    }
+
 	public function getHolidayCalendarIDs($cals): array
     {
 		$IDs = array();		
@@ -165,7 +178,7 @@ class ModuleCalenderEdit extends ModuleCalendar
 	
 	public function generate(): string
     {
-        if (TL_MODE == 'BE') {
+        if ( $this->isBackendRequest() ) {
             $objTemplate = new BackendTemplate('be_wildcard');
 
             $objTemplate->wildcard = '### CALENDAR WITH FE EDITING ###';
