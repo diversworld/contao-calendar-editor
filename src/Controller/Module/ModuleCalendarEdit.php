@@ -40,7 +40,7 @@ class ModuleCalendarEdit extends ModuleCalendar
     protected function initializeServices(): void
     {
         $container = System::getContainer();
-        $this->checkAuthService = $container->get('Diversworld\CalendarEditorBundle\Services\CheckAuthService');
+        $this->checkAuthService = $container->get('DanielGausi\CalendarEditorBundle\Services\CheckAuthService');
 
         $this->scopeMatcher = $container->get('contao.routing.scope_matcher');
         $this->requestStack = $container->get('request_stack');

@@ -39,7 +39,7 @@ class ModuleEventReaderEdit extends Events
         $container = System::getContainer();
 
         if ($this->checkAuthService === null) {
-            $this->checkAuthService = $container->get('Diversworld\CalendarEditorBundle\Services\CheckAuthService');
+            $this->checkAuthService = $container->get('DanielGausi\CalendarEditorBundle\Services\CheckAuthService');
         }
 
         $this->scopeMatcher = $container->get('contao.routing.scope_matcher');
