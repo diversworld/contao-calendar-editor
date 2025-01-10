@@ -26,8 +26,9 @@ services:
       - { name: monolog.logger, channel: contao.general }
 
   DanielGausi\CalendarEditorBundle\Hooks\ListAllEventsHook:
+    public: true
     arguments:
-      $checkAuthService: '@DanielGausi\CalendarEditorBundle\Service\CheckAuthService'
+      $checkAuthService: '@DanielGausi\CalendarEditorBundle\Services\CheckAuthService'
       $user: '@security.token_storage'
 
   DanielGausi\CalendarEditorBundle\Services\CheckAuthService:
