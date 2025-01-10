@@ -2,10 +2,13 @@
 
 namespace DanielGausi\CalendarEditorBundle\Hooks;
 
+use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\FrontendUser;
+use Contao\System;
 use DanielGausi\CalendarEditorBundle\Models\CalendarModelEdit;
 use DanielGausi\CalendarEditorBundle\Services\CheckAuthService;
 use Contao\Frontend;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 class ListAllEventsHook extends Frontend
 {
