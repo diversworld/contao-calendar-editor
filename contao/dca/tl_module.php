@@ -271,12 +271,10 @@ class calendar_eventeditor extends Backend
 	/**
 	 * Import the back end user object
 	 */
-    private BackendUser $user;
-
-    public function __construct( BackendUser $user)
+    public function __construct()
     {
         parent::__construct();
-        $this->user = $user;
+        //$this->import('BackendUser', 'User');
     }
 
 	/**
