@@ -1,23 +1,26 @@
 <?php
 
-namespace DanielGausi\CalendarEditorBundle\Models;
+namespace Diversworld\CalendarEditorBundle\Models;
 
 use Contao\CalendarEventsModel;
-use Date;
+use Contao\Date;
 
-class CalendarEventsModelEdit extends \CalendarEventsModel
+class CalendarEventsModelEdit extends CalendarEventsModel
 {
-    public static function findByIdOrAlias($ids, array $options = []): ?CalendarEventsModel
+    public static function findByIdOrAlias($val, array $opt = []): ?CalendarEventsModel
     {
         $t = static::$strTable;
-        $arrColumns = !is_numeric($ids) ? array("$t.alias=?") : array("$t.id=?");
+        $arrColumns = !is_numeric($val) ? array("$t.alias=?") : array("$t.id=?");
 
-        if (!static::isPreviewMode($options)) {
+        if (!static::isPreviewMode($opt)) {
             $time = Date::floorToMinute();
-            $arrColumns[] = "($t.start='' OR $t.start<='$time') AND ($t.stop='' OR $t.stop>'" . ($time + 60) . "')";
+            $arrColumns[] = "$t.published=1 AND ($t.start='' OR $t.start<=$time) AND ($t.stop='' OR $t.stop>$time)";
         }
 
-        return static::findOneBy($arrColumns, $ids, $options);
+        $eventObject = static::findOneBy($arrColumns, $val, $opt);
+
+        //return static::findOneBy($arrColumns, $ids, $options);
+        return $eventObject;
     }
 
 }

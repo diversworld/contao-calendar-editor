@@ -2,7 +2,7 @@
 
 namespace DanielGausi\CalendarEditorBundle\Models;
 
-use CalendarModel;
+use Contao\CalendarModel;
 use function is_array;
 
 class CalendarModelEdit extends CalendarModel

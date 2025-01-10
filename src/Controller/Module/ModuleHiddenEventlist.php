@@ -1,18 +1,62 @@
 <?php
 
-namespace DanielGausi\CalendarEditorBundle\Modules;
+namespace DanielGausi\CalendarEditorBundle\Controller\Module;
 
-use BackendTemplate;
-use CalendarEventsModel;
-use CalendarModel;
-use Config;
+use Contao\BackendTemplate;
+use Contao\CalendarEventsModel;
+use Contao\CalendarModel;
+use Contao\Config;
 use Contao\StringUtil;
-use ModuleEventlist;
-use PageModel;
+use Contao\ModuleEventlist;
+use Contao\PageModel;
+use Contao\CoreBundle\Routing\ScopeMatcher;
+use Contao\System;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 class ModuleHiddenEventlist extends ModuleEventlist
 {
+    private ScopeMatcher $scopeMatcher; // Dependency Injection für ScopeMatcher
+    private RequestStack $requestStack; // Dependency Injection für RequestStack
 
+    protected function initializeServices(): void
+    {
+        $container = System::getContainer();
+        $this->scopeMatcher = $container->get('contao.routing.scope_matcher');
+        $this->requestStack = $container->get('request_stack');
+    }
+    /**
+     * Check if the current request is a backend request
+     */
+    public function isBackend(): bool
+    {
+        // Fallback: Initialisiere RequestStack, falls es nicht gesetzt ist
+        if (!isset($this->requestStack)) {
+            $this->requestStack = System::getContainer()->get('request_stack');
+        }
+
+        $currentRequest = $this->requestStack->getCurrentRequest();
+
+        if (null === $currentRequest) {
+            return false; // Keine aktuelle Anfrage
+        }
+
+        return $this->scopeMatcher->isBackendRequest($currentRequest);
+    }
+
+    /**
+     * Check if the current request is a frontend request
+     */
+    public function isFrontend(): bool
+    {
+        $currentRequest = $this->requestStack->getCurrentRequest();
+
+        // Sicherstellen, dass die aktuelle Anfrage existiert
+        if (null === $currentRequest) {
+            return false; // Annahme: Kein Request => kein Frontend
+        }
+
+        return $this->scopeMatcher->isFrontendRequest($currentRequest);
+    }
     /**
      * Current date object
      * @var integer
@@ -25,7 +69,7 @@ class ModuleHiddenEventlist extends ModuleEventlist
      */
     protected $strTemplate = 'mod_eventlist';
 
-    protected static $table = 'tl_calendar_events';
+    protected static string $table = 'tl_calendar_events';
 
 
     public static function findCurrentUnPublishedByPid(int $pid, int $start, int $end, array $options = [])
@@ -43,6 +87,9 @@ class ModuleHiddenEventlist extends ModuleEventlist
         return CalendarEventsModel::findBy($arrColumns, $pid, $options);
     }
 
+    /**
+     * @throws \Exception
+     */
     protected function getAllEvents($arrCalendars, $intStart, $intEnd, $blnFeatured = null)
     {
         if (!is_array($arrCalendars)) {
@@ -97,7 +144,7 @@ class ModuleHiddenEventlist extends ModuleEventlist
                             continue;
                         }
 
-                        $this->addEvent($objEvents, $objEvents->startTime, $objEvents->endTime, $strUrl, $intStart, $intEnd, $id);
+                        $this->addEvent($objEvents, $objEvents->startTime, $objEvents->endTime, $strUrl, $intStart, $intEnd);
                     }
                 }
             }
@@ -124,9 +171,9 @@ class ModuleHiddenEventlist extends ModuleEventlist
      * Display a wildcard in the back end
      * @return string
      */
-    public function generate()
+    public function generate() : string
     {
-        if (TL_MODE == 'BE') {
+        if ($this->isBackend()) {
             $objTemplate = new BackendTemplate('be_wildcard');
 
             $objTemplate->wildcard = '### UNPULISHED EVENT LIST ###';
@@ -138,7 +185,7 @@ class ModuleHiddenEventlist extends ModuleEventlist
             return $objTemplate->parse();
         }
 
-        $this->cal_calendar = $this->sortOutProtected(deserialize($this->cal_calendar, true));
+        $this->cal_calendar = $this->sortOutProtected(StringUtil::deserialize($this->cal_calendar, true));
 
         // Return if there are no calendars
         if (!is_array($this->cal_calendar) || count($this->cal_calendar) < 1) {
@@ -152,10 +199,8 @@ class ModuleHiddenEventlist extends ModuleEventlist
     /**
      * Generate module
      */
-    protected function compile()
+    protected function compile() : void
     {
         parent::compile();
     }
 }
-
-?>

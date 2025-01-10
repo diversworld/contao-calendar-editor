@@ -5,12 +5,12 @@ namespace DanielGausi\CalendarEditorBundle\Services;
 use Contao\FrontendUser;
 use Contao\MemberModel;
 use Contao\StringUtil;
+use Contao\System;
 use function DanielGausi\CalendarEditorBundle\EventIsNotElapsed;
 use function DanielGausi\CalendarEditorBundle\EventIsNotElapsed2;
 use function DanielGausi\CalendarEditorBundle\MidnightTime;
 use function DanielGausi\CalendarEditorBundle\UserIsAdmin;
 use function DanielGausi\CalendarEditorBundle\UserIsAuthorizedUser;
-
 class CheckAuthService
 {
     public function isUserAuthorized($calendar, FrontendUser $user): bool
@@ -24,7 +24,9 @@ class CheckAuthService
             return true;
         }
 
-        if (FE_USER_LOGGED_IN) {
+        $hasFrontendUser = System::getContainer()->get('contao.security.token_checker')->hasFrontendUser();
+
+        if ($hasFrontendUser) {
             // Admins are authorized as well ;-)
             if ($this->isUserAdmin($calendar, $user)) {
                 return true;
@@ -47,7 +49,9 @@ class CheckAuthService
             return false;
         }
 
-        if (FE_USER_LOGGED_IN) {
+        $hasFrontendUser =  System::getContainer()->get('contao.security.token_checker')->hasFrontendUser();
+
+        if ($hasFrontendUser) {
             // Get Admin-Groups which are allowed to edit events in this calendar
             // (Admins are allowed to edit events even if the "only owner"-setting is checked)
             // (Admins are allowed to add events on elapsed days)
@@ -75,6 +79,8 @@ class CheckAuthService
 
     public function areEditLinksAllowed($calendar, array $event, int $userID, bool $isUserAdmin, bool $isUserMember): bool
     {
+        $hasFrontendUser =  System::getContainer()->get('contao.security.token_checker')->hasFrontendUser();
+
         if ($calendar->AllowEdit !== '1') {
             return false;
         }
@@ -90,7 +96,7 @@ class CheckAuthService
                 // Allow only if the User belongs to an authorized Member group
                 && ($isUserMember)
                 // Allow only if FE User is logged in or the calendar does not requie login
-                && (FE_USER_LOGGED_IN || !$calendar->caledit_loginRequired)
+                && ($hasFrontendUser || !$calendar->caledit_loginRequired)
                 // Allow only if CalendarEditing is not restricted to future events -OR- EventTime is later then CurrentTime,
                 // && ((!$objCalendar->caledit_onlyFuture) ||  ($currentTime <= $aEvent['startTime']) )
 
@@ -102,6 +108,8 @@ class CheckAuthService
 
     public function EditLinksAreAllowed2($calendar, $event, FrontendUser $user, bool $isUserAdmin, bool $isUserMember): bool
     {
+        $hasFrontendUser =  System::getContainer()->get('contao.security.token_checker')->hasFrontendUser();
+
         if (!$calendar->AllowEdit) {
             return false;
         }
@@ -117,7 +125,7 @@ class CheckAuthService
                 // Allow only if the User belongs to an authorized Member group
                 && ($isUserMember)
                 // Allow only if FE User is logged in or the calendar does not requie login
-                && (FE_USER_LOGGED_IN || !$calendar->caledit_loginRequired)
+                && ($hasFrontendUser || !$calendar->caledit_loginRequired)
                 // Allow only if CalendarEditing is not restricted to future events -OR- EventTime is later then CurrentTime,
                 //&& ((!$objCalendar->caledit_onlyFuture) ||  (time() <= $objEvent->startTime) )
                 && ((!$calendar->caledit_onlyFuture) || (EventIsNotElapsed2($event)))

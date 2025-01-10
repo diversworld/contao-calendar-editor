@@ -1,0 +1,43 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  _instanceof:
+    Contao\CoreBundle\Framework\FrameworkAwareInterface:
+      calls:
+        - [ setFramework, [ '@contao.framework' ] ]
+
+    Symfony\Component\DependencyInjection\ContainerAwareInterface:
+      calls:
+        - [ setContainer, [ '@service_container' ] ]
+
+  DanielGausi\CalendarEditorBundle\Controller\Module\ModuleCalendarEdit:
+    calls:
+      - [ setCheckAuthService, [ '@DanielGausi\CalendarEditorBundle\Services\CheckAuthService' ] ]
+
+  DanielGausi\CalendarEditorBundle\Controller\Module\ModuleEventEditor:
+    arguments:
+      - '@?logger'
+      - '@contao.security.token_checker'
+      - '@doctrine.dbal.default_connection'
+    tags:
+      - { name: monolog.logger, channel: contao.general }
+
+  DanielGausi\CalendarEditorBundle\Hooks\ListAllEventsHook:
+    arguments:
+      $checkAuthService: '@DanielGausi\CalendarEditorBundle\Service\CheckAuthService'
+      $user: '@security.token_storage'
+
+  DanielGausi\CalendarEditorBundle\Services\CheckAuthService:
+    autowire: true
+    autoconfigure: true
+    public: true
+
+  monolog.logger.contao.general:
+    class: Monolog\Logger
+    arguments: ['contao.general']
+    tags:
+      - { name: monolog.logger, channel: contao.general }
+
