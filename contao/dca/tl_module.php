@@ -22,6 +22,8 @@
  */
 
 use Contao\Backend;
+use Contao\BackendUser;
+use Contao\System;
 
 $GLOBALS['TL_DCA']['tl_module']['palettes']['calendarEdit']        =  $GLOBALS['TL_DCA']['tl_module']['palettes']['calendar'].';{edit_legend},caledit_add_jumpTo; {edit_holidays},cal_holidayCalendar' ;
  $GLOBALS['TL_DCA']['tl_module']['palettes']['EventReaderEditLink'] = '{title_legend},name,headline,type;{config_legend},cal_calendar,caledit_showDeleteLink,caledit_showCloneLink';
@@ -266,15 +268,16 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_dateImageSRC'] = array
 
 class calendar_eventeditor extends Backend
 {
-
 	/**
 	 * Import the back end user object
 	 */
-	public function __construct()
-	{
-		parent::__construct();
-		$this->import('BackendUser', 'User');
-	}
+    private BackendUser $user;
+
+    public function __construct( BackendUser $user)
+    {
+        parent::__construct();
+        $this->user = $user;
+    }
 
 	/**
 	 * Return all event templates as array
@@ -288,8 +291,6 @@ class calendar_eventeditor extends Backend
 
 	public function getCSSValues()
 	{
-		$columnFields = null;
-
         $columnFields = array
         (
           'label' => array (
@@ -334,18 +335,28 @@ class calendar_eventeditor extends Backend
      * copied from "FormRTE", @copyright  Andreas Schempp 2009
      */
     public function getConfigFiles()
-	{
-		$arrConfigs = array();
+    {
+        $arrConfigs = array();
 
-		//$arrFiles = scan(TL_ROOT . '/system/config/');
-		$arrFiles = scan(TL_ROOT.'/vendor/danielgausi/contao-calendareditor-bundle/src/Resources/contao/tinyMCE/');// . '/system/config/');
+        // Get the root directory from the Symfony container
+        $rootDir = System::getContainer()->getParameter('kernel.project_dir');
 
-		foreach( $arrFiles as $file ) {
-			//if (substr($file, 0, 4) == 'tiny') {
-				$arrConfigs[] = basename($file, '.php');
-			//}
-		}
-		return $arrConfigs;
-	}
+        // Define the path to the tinyMCE configuration files
+        $tinyMCEPath = $rootDir . '/vendor/diversworld/contao-calendar-editor/src/Resources/contao/tinyMCE/';
+
+        // Check if the directory exists
+        if (is_dir($tinyMCEPath)) {
+            // Use scandir to list files in the directory
+            $arrFiles = scandir($tinyMCEPath);
+
+            foreach ($arrFiles as $file) {
+                // Include only files with the .php extension
+                if (pathinfo($file, PATHINFO_EXTENSION) === 'php') {
+                    $arrConfigs[] = basename($file, '.php');
+                }
+            }
+        }
+        return $arrConfigs;
+    }
 }
 
