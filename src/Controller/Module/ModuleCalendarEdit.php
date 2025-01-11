@@ -1,8 +1,9 @@
 <?php
 
-namespace Danielgausi\CalendarEditorBundle\Controller\Module;
+namespace DanielGausi\CalendarEditorBundle\Controller\Module;
 
 use Contao\BackendTemplate;
+use Contao\CoreBundle\Security\Authentication\Token\TokenChecker;
 use Contao\Date;
 use Contao\FrontendUser;
 use Contao\PageModel;
@@ -12,14 +13,15 @@ use DanielGausi\CalendarEditorBundle\Models\CalendarModelEdit;
 use DanielGausi\CalendarEditorBundle\Services\CheckAuthService;
 use Contao\ModuleCalendar;
 use Contao\CoreBundle\Routing\ScopeMatcher;
+use Doctrine\DBAL\Connection;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 class ModuleCalendarEdit extends ModuleCalendar
 {
-    // variable which indicates whether events can be added or not (on elapsed days)
-    protected bool $allowElapsedEvents;
-    protected bool $allowEditEvents;
+	// variable which indicates whether events can be added or not (on elapsed days)
+	protected bool $allowElapsedEvents;
+	protected bool $allowEditEvents;
 
     private ScopeMatcher $scopeMatcher; // Dependency Injection für ScopeMatcher
     private RequestStack $requestStack; // Dependency Injection für RequestStack
@@ -46,150 +48,150 @@ class ModuleCalendarEdit extends ModuleCalendar
         $this->requestStack = $container->get('request_stack');
     }
 
-    public function getHolidayCalendarIDs($cals): array
+	public function getHolidayCalendarIDs($cals): array
     {
-        $IDs = array();
+		$IDs = array();
 
-        if (is_array($cals)) {
-            foreach ($cals as $flupp) {
-                $IDs[] = $flupp;
-            }
-        }
-        return $IDs;
-    }
+		if (is_array($cals)) {
+		foreach ($cals as $flupp) {
+			$IDs[] = $flupp;
+		}
+		}
+		return $IDs;
+	}
 
-    // check whether the current FE User is allowed to edit any of the calendars
-    public function checkUserAuthorizations($arrCalendars): void
+	// check whether the current FE User is allowed to edit any of the calendars
+	public function checkUserAuthorizations($arrCalendars): void
     {
         $this->User = FrontendUser::getInstance();
 
-        $this->allowElapsedEvents = false;
-        $this->allowEditEvents = false;
+		$this->allowElapsedEvents = false;
+		$this->allowEditEvents = false;
 
-        $calendarModels = CalendarModelEdit::findByIds($arrCalendars);
-        foreach($calendarModels as $calendarModel) {
-            $this->allowElapsedEvents = ($this->allowElapsedEvents || $this->checkAuthService->isUserAuthorizedElapsedEvents($calendarModel, $this->User) );
-            $this->allowEditEvents    = ($this->allowEditEvents    || $this->checkAuthService->isUserAuthorized($calendarModel, $this->User) );
-        }
-    }
+		$calendarModels = CalendarModelEdit::findByIds($arrCalendars);
+		foreach($calendarModels as $calendarModel) {
+			$this->allowElapsedEvents = ($this->allowElapsedEvents || $this->checkAuthService->isUserAuthorizedElapsedEvents($calendarModel, $this->User) );
+			$this->allowEditEvents    = ($this->allowEditEvents    || $this->checkAuthService->isUserAuthorized($calendarModel, $this->User) );
+		}
+	}
 
-    // overwrite the compileWeeks-Method from ModuleCalendar
-    protected function compileWeeks(): array
+	// overwrite the compileWeeks-Method from ModuleCalendar
+	protected function compileWeeks(): array
     {
-        $intDaysInMonth = (int)date('t', $this->Date->monthBegin);
-        $intFirstDayOffset = (int)(date('w', $this->Date->monthBegin) - $this->cal_startDay);
+		$intDaysInMonth = (int)date('t', $this->Date->monthBegin);
+		$intFirstDayOffset = (int)(date('w', $this->Date->monthBegin) - $this->cal_startDay);
 
-        if ($intFirstDayOffset < 0) {
-            $intFirstDayOffset += 7;
-        }
+		if ($intFirstDayOffset < 0) {
+			$intFirstDayOffset += 7;
+		}
 
-        // Check User Authorization to add Events into (one of) the Calendars used in this module
-        // this will set the variables  $this->AllowEditEvents and $this->AllowElapsedEvents
-        $this->checkUserAuthorizations($this->cal_calendar);
+		// Check User Authorization to add Events into (one of) the Calendars used in this module
+		// this will set the variables  $this->AllowEditEvents and $this->AllowElapsedEvents
+		$this->checkUserAuthorizations($this->cal_calendar);
 
         $addUrl = '';
-        if ($this->allowEditEvents){
-            // get the JumpToAdd-Page for this calendar
+		if ($this->allowEditEvents){
+			// get the JumpToAdd-Page for this calendar
             $page = PageModel::findByPk($this->caledit_add_jumpTo);
             if ($page !== null) {
-                $addUrl = $page->getFrontendUrl();
-            }
-        }
+				$addUrl = $page->getFrontendUrl();
+			}
+		}
 
-        $intYear = date('Y', $this->Date->tstamp);
-        $intMonth = date('m', $this->Date->tstamp);
+		$intYear = date('Y', $this->Date->tstamp);
+		$intMonth = date('m', $this->Date->tstamp);
 
-        $intColumnCount = -1;
-        $intNumberOfRows = ceil(($intDaysInMonth + $intFirstDayOffset) / 7);
-        $allEvents = $this->getAllEvents($this->cal_calendar, $this->Date->monthBegin, $this->Date->monthEnd);
-        $arrDays = [];
+		$intColumnCount = -1;
+		$intNumberOfRows = ceil(($intDaysInMonth + $intFirstDayOffset) / 7);
+		$allEvents = $this->getAllEvents($this->cal_calendar, $this->Date->monthBegin, $this->Date->monthEnd);
+		$arrDays = [];
 
-        $dateformat = $GLOBALS['TL_CONFIG']['dateFormat'];
+		$dateformat = $GLOBALS['TL_CONFIG']['dateFormat'];
 
-        // Compile days
-        for ($i=1; $i<=($intNumberOfRows * 7); $i++)
-        {
-            $intWeek = floor(++$intColumnCount / 7);
-            $intDay = $i - $intFirstDayOffset;
-            $intCurrentDay = ($i + $this->cal_startDay) % 7;
+		// Compile days
+		for ($i=1; $i<=($intNumberOfRows * 7); $i++)
+		{
+			$intWeek = floor(++$intColumnCount / 7);
+			$intDay = $i - $intFirstDayOffset;
+			$intCurrentDay = ($i + $this->cal_startDay) % 7;
 
-            $strWeekClass = 'week_' . $intWeek;
-            $strWeekClass .= ($intWeek == 0) ? ' first' : '';
-            $strWeekClass .= ($intWeek == ($intNumberOfRows - 1)) ? ' last' : '';
+			$strWeekClass = 'week_' . $intWeek;
+			$strWeekClass .= ($intWeek == 0) ? ' first' : '';
+			$strWeekClass .= ($intWeek == ($intNumberOfRows - 1)) ? ' last' : '';
 
-            $strClass = ($intCurrentDay < 2) ? ' weekend' : '';
-            $strClass .= ($i == 1 || $i == 8 || $i == 15 || $i == 22 || $i == 29 || $i == 36) ? ' col_first' : '';
-            $strClass .= ($i == 7 || $i == 14 || $i == 21 || $i == 28 || $i == 35 || $i == 42) ? ' col_last' : '';
+			$strClass = ($intCurrentDay < 2) ? ' weekend' : '';
+			$strClass .= ($i == 1 || $i == 8 || $i == 15 || $i == 22 || $i == 29 || $i == 36) ? ' col_first' : '';
+			$strClass .= ($i == 7 || $i == 14 || $i == 21 || $i == 28 || $i == 35 || $i == 42) ? ' col_last' : '';
 
-            // Empty cell
-            if ($intDay < 1 || $intDay > $intDaysInMonth) {
-                $arrDays[$strWeekClass][$i]['label'] = '&nbsp;';
-                $arrDays[$strWeekClass][$i]['class'] = 'days empty' . $strClass ;
-                $arrDays[$strWeekClass][$i]['events'] = array();
+			// Empty cell
+			if ($intDay < 1 || $intDay > $intDaysInMonth) {
+				$arrDays[$strWeekClass][$i]['label'] = '&nbsp;';
+				$arrDays[$strWeekClass][$i]['class'] = 'days empty' . $strClass ;
+				$arrDays[$strWeekClass][$i]['events'] = array();
 
-                continue;
-            }
+				continue;
+			}
 
-            $intKey = date('Ym', $this->Date->tstamp) . ((strlen($intDay) < 2) ? '0' . $intDay : $intDay);
-            $strClass .= ($intKey == date('Ymd')) ? ' today' : '';
+			$intKey = date('Ym', $this->Date->tstamp) . ((strlen($intDay) < 2) ? '0' . $intDay : $intDay);
+			$strClass .= ($intKey == date('Ymd')) ? ' today' : '';
 
-            $arrDays[$strWeekClass][$i]['addLabel'] = $GLOBALS['TL_LANG']['MSC']['caledit_addLabel'];
-            $arrDays[$strWeekClass][$i]['addTitle'] = $GLOBALS['TL_LANG']['MSC']['caledit_addTitle'];
+			$arrDays[$strWeekClass][$i]['addLabel'] = $GLOBALS['TL_LANG']['MSC']['caledit_addLabel'];
+			$arrDays[$strWeekClass][$i]['addTitle'] = $GLOBALS['TL_LANG']['MSC']['caledit_addTitle'];
 
-            // Inactive days
-            if (empty($intKey) || !isset($allEvents[$intKey]))
-            {
-                $arrDays[$strWeekClass][$i]['label'] = $intDay;
-                $arrDays[$strWeekClass][$i]['class'] = 'days' . $strClass;
-                // add Links to add Events, if allowed
-                if ($this->allowEditEvents && ($this->allowElapsedEvents || ($intKey >= date('Ymd')) )  ){
-                    $ts = mktime(8, 0, 0, $intMonth, $intDay, $intYear); // 8:00 at this day
-                    $arrDays[$strWeekClass][$i]['addRef'] = $addUrl . '?add=' . Date::parse($dateformat, $ts);
-                }
-                $arrDays[$strWeekClass][$i]['events'] = [];
+			// Inactive days
+			if (empty($intKey) || !isset($allEvents[$intKey]))
+			{
+				$arrDays[$strWeekClass][$i]['label'] = $intDay;
+				$arrDays[$strWeekClass][$i]['class'] = 'days' . $strClass;
+				// add Links to add Events, if allowed
+				if ($this->allowEditEvents && ($this->allowElapsedEvents || ($intKey >= date('Ymd')) )  ){
+					$ts = mktime(8, 0, 0, $intMonth, $intDay, $intYear); // 8:00 at this day
+					$arrDays[$strWeekClass][$i]['addRef'] = $addUrl . '?add=' . Date::parse($dateformat, $ts);
+				}
+				$arrDays[$strWeekClass][$i]['events'] = [];
 
-                continue;
-            }
+				continue;
+			}
 
-            $events = [];
-            $holidayEvents = [];
+			$events = [];
+			$holidayEvents = [];
 
-            $validHolidays = [];
+			$validHolidays = [];
             $this->cal_holidayCalendar = $this->sortOutProtected(StringUtil::deserialize($this->cal_holidayCalendar, true));
-            if (is_array($this->cal_holidayCalendar) && !empty($this->cal_holidayCalendar)) {
-                $validHolidays = $this->getHolidayCalendarIDs($this->cal_holidayCalendar);
-            }
+			if (is_array($this->cal_holidayCalendar) && !empty($this->cal_holidayCalendar)) {
+				$validHolidays = $this->getHolidayCalendarIDs($this->cal_holidayCalendar);
+			}
 
-            // Get all events of a day
-            foreach ($allEvents[$intKey] as $v) {
-                foreach ($v as $vv) {
-                    if ( in_array($vv['parent'], $validHolidays)) {
-                        $holidayEvents[] = $vv;
-                    } else {
-                        $events[] = $vv;
-                    }
-                }
-            }
+			// Get all events of a day
+			foreach ($allEvents[$intKey] as $v) {
+				foreach ($v as $vv) {
+					if ( in_array($vv['parent'], $validHolidays)) {
+						$holidayEvents[] = $vv;
+					} else {
+						$events[] = $vv;
+					}
+				}
+			}
 
-            if (count($holidayEvents) > 0) {
-                $strClass .= ' holiday';
-            }
+			if (count($holidayEvents) > 0) {
+				$strClass .= ' holiday';
+			}
 
-            $arrDays[$strWeekClass][$i]['label'] = $intDay;
-            if ($this->allowEditEvents && ($this->allowElapsedEvents || ($intKey >= date('Ymd')) )  ){
-                $ts = mktime(8, 0, 0, $intMonth, $intDay, $intYear); // 8:00 at this day
-                $arrDays[$strWeekClass][$i]['addRef'] = $addUrl . '?add=' . Date::parse($dateformat, $ts);
-            }
-            $arrDays[$strWeekClass][$i]['class'] = 'days active' . $strClass;
-            $arrDays[$strWeekClass][$i]['href'] = $this->strLink . '?day=' . $intKey;
-            $arrDays[$strWeekClass][$i]['title'] = sprintf($GLOBALS['TL_LANG']['MSC']['cal_events'], count($events));
-            $arrDays[$strWeekClass][$i]['events'] = $events;
-            $arrDays[$strWeekClass][$i]['holidayEvents'] = $holidayEvents;
-        }
-        return $arrDays;
-    }
+			$arrDays[$strWeekClass][$i]['label'] = $intDay;
+			if ($this->allowEditEvents && ($this->allowElapsedEvents || ($intKey >= date('Ymd')) )  ){
+				$ts = mktime(8, 0, 0, $intMonth, $intDay, $intYear); // 8:00 at this day
+				$arrDays[$strWeekClass][$i]['addRef'] = $addUrl . '?add=' . Date::parse($dateformat, $ts);
+			}
+			$arrDays[$strWeekClass][$i]['class'] = 'days active' . $strClass;
+			$arrDays[$strWeekClass][$i]['href'] = $this->strLink . '?day=' . $intKey;
+			$arrDays[$strWeekClass][$i]['title'] = sprintf($GLOBALS['TL_LANG']['MSC']['cal_events'], count($events));
+			$arrDays[$strWeekClass][$i]['events'] = $events;
+			$arrDays[$strWeekClass][$i]['holidayEvents'] = $holidayEvents;
+		}
+		return $arrDays;
+	}
 
-    public function generate(): string
+	public function generate(): string
     {
         $this->initializeServices();
         $request = $this->requestStack->getCurrentRequest();
@@ -209,11 +211,11 @@ class ModuleCalendarEdit extends ModuleCalendar
         return parent::generate();
     }
 
-    /**
-     * Generate module
-     */
-    protected function compile(): void
+	/**
+	 * Generate module
+	 */
+	protected function compile(): void
     {
         parent::compile();
-    }
+	}
 }

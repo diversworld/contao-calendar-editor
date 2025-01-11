@@ -8,7 +8,7 @@
  * @author     Daniel Gaußmann (Gausi)
  * @package    Calendar_Editor
  * @license    LGPL-3.0-or-later
- * @see        https://github.com/DanielGausi/Contao-CalendarEditor
+ * @see        https://github.com/Diversworld/Contao-CalendarEditor
  *
  * an extension for
  * Contao Open Source CMS
@@ -24,7 +24,7 @@ use DanielGausi\CalendarEditorBundle\Hooks\ListAllEventsHook;
 use DanielGausi\CalendarEditorBundle\Controller\Module\ModuleCalendarEdit;
 use DanielGausi\CalendarEditorBundle\Controller\Module\ModuleEventEditor;
 use DanielGausi\CalendarEditorBundle\Controller\Module\ModuleEventReaderEdit;
-use DanielGausi\CalendarEditorBundle\Controller\Module\ModuleHiddenEventlist;
+use DiverDanielGausisworld\CalendarEditorBundle\Controller\Module\ModuleHiddenEventlist;
 
 $GLOBALS['FE_MOD']['events']['calendarEdit']        = ModuleCalendarEdit::class;
 $GLOBALS['FE_MOD']['events']['EventEditor']         = ModuleEventEditor::class;
@@ -32,7 +32,4 @@ $GLOBALS['FE_MOD']['events']['EventReaderEditLink'] = ModuleEventReaderEdit::cla
 $GLOBALS['FE_MOD']['events']['EventHiddenList']     = ModuleHiddenEventlist::class;
 
 //$GLOBALS['TL_HOOKS']['getAllEvents'][] = [ListAllEventsHook::class, 'updateAllEvents'];
-$GLOBALS['TL_HOOKS']['getAllEvents'][] = [
-    'DanielGausi\CalendarEditorBundle\Hooks\ListAllEventsHook',
-    'updateAllEvents'
-];
+$GLOBALS['TL_HOOKS']['listAllEvents'][] = ['DanielGausi\CalendarEditorBundle\Hooks\ListAllEventsHook', 'onListAllEvents'];

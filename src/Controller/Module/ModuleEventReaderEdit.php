@@ -66,40 +66,40 @@ class ModuleEventReaderEdit extends Events
         return $this->scopeMatcher->isFrontendRequest($currentRequest);
     }
 
-    /**
-     * Display a wildcard in the back end
-     * @return string
-     */
-    public function generate() : string
-    {
+	/**
+	 * Display a wildcard in the back end
+	 * @return string
+	 */
+	public function generate() : string
+	{
         $request = System::getContainer()->get('request_stack')->getCurrentRequest();
 
         if ($request && System::getContainer()->get('contao.routing.scope_matcher')->isBackendRequest($request)){
-            $objTemplate = new BackendTemplate('be_wildcard');
+			$objTemplate = new BackendTemplate('be_wildcard');
 
-            $objTemplate->wildcard = '### EVENT READER EDIT LINK ###';
-            $objTemplate->title = $this->headline;
-            $objTemplate->id = $this->id;
-            $objTemplate->link = $this->name;
-            $objTemplate->href = 'contao/main.php?do=themes&amp;table=tl_module&amp;table=tl_module&amp;act=edit&amp;id=' . $this->id;
+			$objTemplate->wildcard = '### EVENT READER EDIT LINK ###';
+			$objTemplate->title = $this->headline;
+			$objTemplate->id = $this->id;
+			$objTemplate->link = $this->name;
+			$objTemplate->href = 'contao/main.php?do=themes&amp;table=tl_module&amp;table=tl_module&amp;act=edit&amp;id=' . $this->id;
 
-            return $objTemplate->parse();
-        }
+			return $objTemplate->parse();
+		}
 
-        // Return if no event has been specified
-        if (!Input::get('events')) {
-            return '';
-        }
+		// Return if no event has been specified
+		if (!Input::get('events')) {
+			return '';
+		}
 
-        $this->cal_calendar = $this->sortOutProtected(StringUtil::deserialize($this->cal_calendar));
+		$this->cal_calendar = $this->sortOutProtected(StringUtil::deserialize($this->cal_calendar));
 
-        // Return if there are no calendars
-        if (!is_array($this->cal_calendar) || count($this->cal_calendar) < 1)
-        {
-            return '';
-        }
-        return parent::generate();
-    }
+		// Return if there are no calendars
+		if (!is_array($this->cal_calendar) || count($this->cal_calendar) < 1)
+		{
+			return '';
+		}
+		return parent::generate();
+	}
 
     protected function compile(): void
     {
@@ -107,7 +107,7 @@ class ModuleEventReaderEdit extends Events
         $this->Template->editRef = '';
 
         // Token checker service
-        // $time = time();
+       // $time = time();
 
         // Überprüfen, ob der Benutzer eingeloggt ist
         //$backendUser = $this->security->getUser();

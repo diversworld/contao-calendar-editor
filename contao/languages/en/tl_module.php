@@ -1,5 +1,6 @@
 <?php
 
+
 $GLOBALS['TL_LANG']['tl_module']['caledit_add_jumpTo']     = array('Redirect page for adding events', 'Please choose the page to which the FE user will be redirected when adding an event.');
 $GLOBALS['TL_LANG']['tl_module']['caledit_template']       = array('Event editor template (edit)', 'Select the template for the event editor when editing an event.');
 

@@ -15,17 +15,16 @@
  * (c) Leo Feyer, LGPL-3.0-or-later
  *
  */
-
-
+use Contao\Backend;
+use Contao\BackendUser;
+use Contao\System;
+use \Symfony\Component\DependencyInjection\ContainerAwareInterface;
+use \Symfony\Component\DependencyInjection\ContainerAwareTrait;
 /**
  * Add palettes to tl_module
  */
 
-use Contao\Backend;
-use Contao\BackendUser;
-use Contao\System;
-
-$GLOBALS['TL_DCA']['tl_module']['palettes']['calendarEdit']        =  $GLOBALS['TL_DCA']['tl_module']['palettes']['calendar'].';{edit_legend},caledit_add_jumpTo; {edit_holidays},cal_holidayCalendar' ;
+ $GLOBALS['TL_DCA']['tl_module']['palettes']['calendarEdit']        =  $GLOBALS['TL_DCA']['tl_module']['palettes']['calendar'].';{edit_legend},caledit_add_jumpTo; {edit_holidays},cal_holidayCalendar' ;
  $GLOBALS['TL_DCA']['tl_module']['palettes']['EventReaderEditLink'] = '{title_legend},name,headline,type;{config_legend},cal_calendar,caledit_showDeleteLink,caledit_showCloneLink';
  $GLOBALS['TL_DCA']['tl_module']['palettes']['EventHiddenList']     = $GLOBALS['TL_DCA']['tl_module']['palettes']['eventlist'];
  $GLOBALS['TL_DCA']['tl_module']['palettes']['EventEditor']
@@ -263,19 +262,18 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_dateImageSRC'] = array
 //caledit_dateIncludeCSS, caledit_dateIncludeCSSTheme,
 //caledit_dateImage, caledit_dateImageSRC'
 
-
-
-
-class calendar_eventeditor extends Backend
+class calendar_eventeditor extends Backend //implements ContainerAwareInterface
 {
+    //use ContainerAwareTrait;
+
 	/**
 	 * Import the back end user object
 	 */
-    public function __construct()
-    {
-        parent::__construct();
-        //$this->import('BackendUser', 'User');
-    }
+	public function __construct()
+	{
+		parent::__construct();
+		//$this->import('BackendUser', 'User');
+	}
 
 	/**
 	 * Return all event templates as array
@@ -289,6 +287,8 @@ class calendar_eventeditor extends Backend
 
 	public function getCSSValues()
 	{
+		$columnFields = null;
+
         $columnFields = array
         (
           'label' => array (
@@ -309,12 +309,14 @@ class calendar_eventeditor extends Backend
 	}
 	public function getCalendars()
 	{
-		if (!$this->User->isAdmin && !is_array($this->User->calendars))
-		{
-			return array();
-		}
+        // Get the BackendUser from the Symfony container
+        $user = System::getContainer()->get('security.token_storage')->getToken()->getUser();
 
-		$arrCalendars = array();
+        if (!$user instanceof BackendUser || (!$user->isAdmin && !is_array($user->calendars))) {
+            return [];
+        }
+
+        $arrCalendars = array();
 		$objCalendars = $this->Database->execute("SELECT id, title FROM tl_calendar ORDER BY title");
 
 		while ($objCalendars->next())
@@ -333,7 +335,7 @@ class calendar_eventeditor extends Backend
      * copied from "FormRTE", @copyright  Andreas Schempp 2009
      */
     public function getConfigFiles()
-    {
+	{
         $arrConfigs = array();
 
         // Get the root directory from the Symfony container
@@ -355,6 +357,6 @@ class calendar_eventeditor extends Backend
             }
         }
         return $arrConfigs;
-    }
+	}
 }
 

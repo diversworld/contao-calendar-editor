@@ -27,7 +27,7 @@ services:
 
   DanielGausi\CalendarEditorBundle\Hooks\ListAllEventsHook:
     arguments:
-      $checkAuthService: '@DanielGausi\CalendarEditorBundle\Services\CheckAuthService'
+      $checkAuthService: '@DanielGausi\CalendarEditorBundle\Service\CheckAuthService'
       $user: '@security.token_storage'
 
   DanielGausi\CalendarEditorBundle\Services\CheckAuthService:

@@ -11,6 +11,7 @@ use function DanielGausi\CalendarEditorBundle\EventIsNotElapsed2;
 use function DanielGausi\CalendarEditorBundle\MidnightTime;
 use function DanielGausi\CalendarEditorBundle\UserIsAdmin;
 use function DanielGausi\CalendarEditorBundle\UserIsAuthorizedUser;
+
 class CheckAuthService
 {
     public function isUserAuthorized($calendar, FrontendUser $user): bool

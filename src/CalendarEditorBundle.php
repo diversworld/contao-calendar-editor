@@ -8,7 +8,7 @@
  * @author     Daniel Gaußmann (Gausi)
  * @package    Calendar_Editor
  * @license    LGPL-3.0-or-later
- * @see        https://github.com/DanielGausi/Contao-CalendarEditor
+ * @see        https://github.com/Diversworld/Contao-CalendarEditor
  *
  * an extension for
  * Contao Open Source CMS
@@ -18,8 +18,8 @@
 
 namespace DanielGausi\CalendarEditorBundle;
 
-use DanielGausi\CalendarEditorBundle\DependencyInjection\CalendarEditorExtension;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
+use DanielGausi\CalendarEditorBundle\DependencyInjection\CalendarEditorExtension;
 
 class CalendarEditorBundle extends Bundle
 {
@@ -33,4 +33,3 @@ class CalendarEditorBundle extends Bundle
         return new CalendarEditorExtension();
     }
 }
-

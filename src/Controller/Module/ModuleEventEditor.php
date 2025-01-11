@@ -73,7 +73,7 @@ class ModuleEventEditor extends Events
         $this->initializeServices();
         $request = $this->requestStack->getCurrentRequest();
 
-        //if ($request && System::getContainer()->get('contao.routing.scope_matcher')->isBackendRequest($request))
+		//if ($request && System::getContainer()->get('contao.routing.scope_matcher')->isBackendRequest($request))
         if( $this->scopeMatcher->isBackendRequest($request))
         {
             $objTemplate = new BackendTemplate('be_wildcard');
