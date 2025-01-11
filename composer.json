@@ -1,5 +1,5 @@
 {
-  "name": "diversworld/contao-calendar-editor-bundle",
+  "name": "diversworld/contao-calendar-editor",
   "description": "Contao Extension to create and edit calendar events in the frontend.",
   "keywords": ["contao",
 			   "calendar",
@@ -9,7 +9,7 @@
 			   "events", "frontend",
 			   "events frontend"],
   "type": "contao-bundle",
-  "homepage": "https://github.com/diversworld/contao-calendar-editor-bundle",
+  "homepage": "https://github.com/diversworld/contao-calendar-editor",
   "license": "LGPL-3.0-or-later",
 
     "require": {
