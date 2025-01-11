@@ -21,9 +21,14 @@
  * http://tinymce.moxiecode.com for more information.
  */
 
+use Contao\System;
+
 if ($GLOBALS['TL_CONFIG']['useRTE']): ?>
 
-<script src="<?php echo TL_ASSETS_URL; ?>assets/tinymce4/js/tinymce.min.js"></script>
+    <?php $container = System::getContainer(); ?>
+
+
+<script src="<?php $container->get('contao.assets.assets_context')->getStaticUrl(); ?>assets/tinymce4/js/tinymce.min.js"></script>
 <script>tinymce.init({
 	selector:'textarea#ctrl_details, textarea#ctrl_teaser',
 	menubar : false,
