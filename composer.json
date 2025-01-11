@@ -33,7 +33,7 @@
 		]
   	},
 	"extra":{
-		"contao-manager-plugin": "DanielGausi\\CalendarEditorBundle\\ContaoManager\\Plugin"
+		"contao-manager-plugin": "DanielGausi\\CalendarEditor\\ContaoManager\\Plugin"
 	},
   "config": {
     "allow-plugins": {
