@@ -22,6 +22,8 @@
  * http://tinymce.moxiecode.com for more information.
  */
 
+use Contao\System;
+
 if ($GLOBALS['TL_CONFIG']['useRTE']): ?>
 
 <?php $container = System::getContainer(); ?>
