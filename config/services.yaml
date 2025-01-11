@@ -13,11 +13,11 @@ services:
       calls:
         - [ setContainer, [ '@service_container' ] ]
 
-  DanielGausi\CalendarEditorBundle\Controller\Module\ModuleCalendarEdit:
+  Diversworld\CalendarEditorBundle\Controller\Module\ModuleCalendarEdit:
     calls:
-      - [ setCheckAuthService, [ '@DanielGausi\CalendarEditorBundle\Services\CheckAuthService' ] ]
+      - [ setCheckAuthService, [ '@Diversworld\CalendarEditorBundle\Services\CheckAuthService' ] ]
 
-  DanielGausi\CalendarEditorBundle\Controller\Module\ModuleEventEditor:
+  Diversworld\CalendarEditorBundle\Controller\Module\ModuleEventEditor:
     arguments:
       - '@?logger'
       - '@contao.security.token_checker'
@@ -25,12 +25,12 @@ services:
     tags:
       - { name: monolog.logger, channel: contao.general }
 
-  DanielGausi\CalendarEditorBundle\Hooks\ListAllEventsHook:
+  Diversworld\CalendarEditorBundle\Hooks\ListAllEventsHook:
     arguments:
-      $checkAuthService: '@DanielGausi\CalendarEditorBundle\Service\CheckAuthService'
+      $checkAuthService: '@Diversworld\CalendarEditorBundle\Service\CheckAuthService'
       $user: '@security.token_storage'
 
-  DanielGausi\CalendarEditorBundle\Services\CheckAuthService:
+  Diversworld\CalendarEditorBundle\Services\CheckAuthService:
     autowire: true
     autoconfigure: true
     public: true

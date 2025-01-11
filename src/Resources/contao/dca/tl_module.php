@@ -8,7 +8,7 @@
  * @author     Daniel Gaußmann (Gausi)
  * @package    Calendar_Editor
  * @license    LGPL-3.0-or-later
- * @see        https://github.com/diversworld/contao-calendar-editor
+ * @see        https://github.com/DanielGausi/Contao-CalendarEditor
  *
  * an extension for
  * Contao Open Source CMS
@@ -16,7 +16,6 @@
  *
  */
 use Contao\Backend;
-use Contao\BackendUser;
 use Contao\System;
 use \Symfony\Component\DependencyInjection\ContainerAwareInterface;
 use \Symfony\Component\DependencyInjection\ContainerAwareTrait;

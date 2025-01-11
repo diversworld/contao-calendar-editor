@@ -1,6 +1,6 @@
 <?php
 
-namespace DanielGausi\CalendarEditorBundle\Controller\Module;
+namespace Diversworld\CalendarEditorBundle\Controller\Module;
 
 use Contao\BackendTemplate;
 use Contao\CalendarEventsModel;
@@ -19,9 +19,9 @@ use Contao\Image\Exception\InvalidArgumentException;
 use Contao\PageModel;
 use Contao\StringUtil;
 use Contao\System;
-use DanielGausi\CalendarEditorBundle\Models\CalendarEventsModelEdit;
-use DanielGausi\CalendarEditorBundle\Models\CalendarModelEdit;
-use DanielGausi\CalendarEditorBundle\Services\CheckAuthService;
+use Diversworld\CalendarEditorBundle\Models\CalendarEventsModelEdit;
+use Diversworld\CalendarEditorBundle\Models\CalendarModelEdit;
+use Diversworld\CalendarEditorBundle\Services\CheckAuthService;
 use Contao\Date;
 use Contao\Events;
 use Contao\FrontendTemplate;
@@ -58,7 +58,7 @@ class ModuleEventEditor extends Events
     {
         $container = System::getContainer();
 
-        $this->checkAuthService = $container->get('DanielGausi\CalendarEditorBundle\Services\CheckAuthService');
+        $this->checkAuthService = $container->get('Diversworld\CalendarEditorBundle\Services\CheckAuthService');
         $this->scopeMatcher = $container->get('contao.routing.scope_matcher');
         $this->requestStack = $container->get('request_stack');
         // Hole die Doctrine Connection

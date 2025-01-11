@@ -1,6 +1,6 @@
 <?php
 
-namespace DanielGausi\CalendarEditorBundle\Controller\Module;
+namespace Diversworld\CalendarEditorBundle\Controller\Module;
 
 use Contao\BackendTemplate;
 use Contao\CalendarEventsModel;
@@ -8,8 +8,8 @@ use Contao\Events;
 use Contao\Input;
 use Contao\StringUtil;
 use Contao\System;
-use DanielGausi\CalendarEditorBundle\Models\CalendarModelEdit;
-use DanielGausi\CalendarEditorBundle\Services\CheckAuthService;
+use Diversworld\CalendarEditorBundle\Models\CalendarModelEdit;
+use Diversworld\CalendarEditorBundle\Services\CheckAuthService;
 use Contao\FrontendTemplate;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use RuntimeException;
@@ -39,7 +39,7 @@ class ModuleEventReaderEdit extends Events
         $container = System::getContainer();
 
         if ($this->checkAuthService === null) {
-            $this->checkAuthService = $container->get('DanielGausi\CalendarEditorBundle\Services\CheckAuthService');
+            $this->checkAuthService = $container->get('Diversworld\CalendarEditorBundle\Services\CheckAuthService');
         }
 
         $this->scopeMatcher = $container->get('contao.routing.scope_matcher');
