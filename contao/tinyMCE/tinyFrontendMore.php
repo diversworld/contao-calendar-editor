@@ -27,7 +27,7 @@ use Contao\System;
 
 if ($GLOBALS['TL_CONFIG']['useRTE']): ?>
 
-    <?php $container = System::getContainer(); ?>
+<?php $container = System::getContainer(); ?>
 
 <script src="<?php echo $container->get('contao.assets.assets_context')->getStaticUrl(); ?>assets/tinymce4/js/tinymce.min.js"></script>
 <script>tinymce.init({
