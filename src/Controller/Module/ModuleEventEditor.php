@@ -1428,44 +1428,43 @@ class ModuleEventEditor extends Events
         // Abrufen der aktuellen URL
         $host = $currentRequest->getHost();
 
+        // Template-Name basierend auf Aktion bestimmen
         if ($editID) {
             if ($editID == -1) {
+                $templateName = 'mail_event_subject_delete';
                 $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectDelete'], $host);
             } else {
+                $templateName = 'mail_event_subject_edit';
                 $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectEdit'], $host);
             }
         } else {
+            $templateName = 'mail_event_notification';
             $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectNew'], $host);
         }
 
+        // Template laden
+        $template = new FrontendTemplate($templateName);
+
+        // Daten an das Template übergeben
+        $template->host = $host;
+        $template->hasFrontendUser = $hasFrontendUser;
+        $template->user = $User;
+        $template->startDate = $NewEventData['startDate'];
+        $template->endDate = $NewEventData['endDate'];
+        $template->startTime = $NewEventData['startTime'];
+        $template->endTime = $NewEventData['endTime'];
+        $template->title = $NewEventData['title'];
+        $template->published = $NewEventData['published'];
+        $template->cloneDates = $cloneDates;
+        $template->allowPublish = $this->caledit_allowPublish;
+
+        // Den generierten Text aus dem Template holen
+        $notification->text = $template->parse();
+
+        // Empfänger aufteilen
         $arrRecipients = StringUtil::trimsplit(',', $this->caledit_mailRecipient);
-        $mText = $GLOBALS['TL_LANG']['MSC']['caledit_MailEventdata'] . " \n\n";
 
-        if (!$hasFrontendUser) {
-            $mText .= $GLOBALS['TL_LANG']['MSC']['caledit_MailUnregisteredUser'] . " \n";
-        } else {
-            $mText .= sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailUser'], $User) . " \n";
-        }
-        $mText .= $GLOBALS['TL_LANG']['MSC']['caledit_startdate'] . ': ' . $NewEventData['startDate'] . " \n";
-        $mText .= $GLOBALS['TL_LANG']['MSC']['caledit_enddate'] . ': ' . $NewEventData['endDate'] . "\n";
-        $mText .= $GLOBALS['TL_LANG']['MSC']['caledit_starttime'] . ': ' . $NewEventData['startTime'] . "\n";
-        $mText .= $GLOBALS['TL_LANG']['MSC']['caledit_endtime'] . ': ' . $NewEventData['endTime'] . "\n";
-        $mText .= $GLOBALS['TL_LANG']['MSC']['caledit_title'] . ': ' . $NewEventData['title'] . "\n";
-        if ($NewEventData['published']) {
-            $mText .= $GLOBALS['TL_LANG']['MSC']['caledit_publishedEvent'];
-        } else {
-            $mText .= $GLOBALS['TL_LANG']['MSC']['caledit_unpublishedEvent'];
-        }
-
-        if ($cloneDates) {
-            $mText .= "\n\n" . $GLOBALS['TL_LANG']['MSC']['caledit_MailEventWasCloned'] . "\n" . $cloneDates;
-        }
-
-        if (!$this->caledit_allowPublish) {
-            $mText .= "\n\n" . $GLOBALS['TL_LANG']['MSC']['caledit_BEUserHint'];
-        }
-        $notification->text = $mText;
-
+        // Mail versenden
         foreach ($arrRecipients as $rec) {
             $notification->sendTo($rec);
         }
