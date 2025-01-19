@@ -25,3 +25,4 @@ Das Event wurde geklont: {{cloneDates}}
 {% if not allowPublish %}
 Bitte beachten Sie, dass die Veröffentlichung manuell durch einen Administrator erfolgen muss.
 {% endif %}
+

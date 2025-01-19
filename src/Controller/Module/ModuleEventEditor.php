@@ -1474,6 +1474,7 @@ class ModuleEventEditor extends Events
      */
     protected function compile() : void
     {
+
         $this->initializeServices();
         // Add TinyMCE-Stuff to header
         $this->addTinyMCE($this->caledit_tinMCEtemplate);
