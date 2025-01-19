@@ -722,10 +722,10 @@ class ModuleEventEditor extends Events
             ]
         ];
 
-        /*if ($this->caledit_useDatePicker) {
+        if ($this->caledit_useDatePicker) {
             $this->addDatePicker($fields['startDate']);
             $this->addDatePicker($fields['endDate']);
-        }*/
+        }
 
         $fields['startTime'] = [
             'name' => 'startTime',
@@ -904,23 +904,6 @@ class ModuleEventEditor extends Events
         }
 
         // Create jump-to-selection
-        /*$JumpOpts = ['new' => 'new', 'view' => 'view', 'edit' => 'edit', 'clone' => 'clone'];
-        $JumpRefs = [
-            'new' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToNew'],
-            'view' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToView'],
-            'edit' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToEdit'],
-            'clone' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToClone']
-        ];*/
-
-        // Umwandlung in Contao-konforme Struktur
-        /*$JumpOptions = [];
-        foreach ($JumpOpts as $key => $value) {
-            $JumpOptions[$key] = [
-                'value' => $value,
-                'label' => $JumpRefs[$key] ?? $value
-            ];
-        }*/
-
         // Formularfeld definieren
         $fields['jumpToSelection'] = [
             'name' => 'jumpToSelection',
@@ -1421,51 +1404,45 @@ class ModuleEventEditor extends Events
         $this->initializeServices();
         $currentRequest = $this->requestStack->getCurrentRequest();
 
-        $notification = new Email();
-        $notification->from = $GLOBALS['TL_ADMIN_EMAIL'];
-        $hasFrontendUser = $this->tokenChecker->hasFrontendUser();
+        // Twig-Renderer laden
+        $container = System::getContainer();
+        $twig = $container->get('twig');
 
         // Abrufen der aktuellen URL
         $host = $currentRequest->getHost();
 
+        // Bestimmung des Betreffs anhand des editIDs
         if ($editID) {
-            if ($editID == -1) {
-                $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectDelete'], $host);
-            } else {
-                $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectEdit'], $host);
-            }
+            $subjectKey = ($editID == -1)
+                ? 'caledit_MailSubjectDelete'
+                : 'caledit_MailSubjectEdit';
         } else {
-            $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectNew'], $host);
+            $subjectKey = 'caledit_MailSubjectNew';
         }
 
+        // Bestimmen, ob ein Frontend-Benutzer vorhanden ist
+        $hasFrontendUser = $this->tokenChecker->hasFrontendUser();
+
+        // Twig-Template-Vorlage für die E-Mail rendern
+        $emailBody = $twig->render('mail_event_notification.html.twig', [
+            'event' => $NewEventData,
+            'recipientName' => $User,
+            'cloneDates' => $cloneDates,
+            'host' => $host,
+            'isFrontendUser' => $hasFrontendUser,
+            'allowPublish' => $this->caledit_allowPublish,
+            'subjectKey' => $GLOBALS['TL_LANG']['MSC'][$subjectKey],
+            'localization' => $GLOBALS['TL_LANG']['MSC']
+        ]);
+
+        // E-Mail erstellen
+        $notification = new Email();
+        $notification->from = $GLOBALS['TL_ADMIN_EMAIL'];
+        $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC'][$subjectKey], $host);
+        $notification->text = $emailBody;
+
+        // Empfänger aufteilen und versenden
         $arrRecipients = StringUtil::trimsplit(',', $this->caledit_mailRecipient);
-        $mText = $GLOBALS['TL_LANG']['MSC']['caledit_MailEventdata'] . " \n\n";
-
-        if (!$hasFrontendUser) {
-            $mText .= $GLOBALS['TL_LANG']['MSC']['caledit_MailUnregisteredUser'] . " \n";
-        } else {
-            $mText .= sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailUser'], $User) . " \n";
-        }
-        $mText .= $GLOBALS['TL_LANG']['MSC']['caledit_startdate'] . ': ' . $NewEventData['startDate'] . " \n";
-        $mText .= $GLOBALS['TL_LANG']['MSC']['caledit_enddate'] . ': ' . $NewEventData['endDate'] . "\n";
-        $mText .= $GLOBALS['TL_LANG']['MSC']['caledit_starttime'] . ': ' . $NewEventData['startTime'] . "\n";
-        $mText .= $GLOBALS['TL_LANG']['MSC']['caledit_endtime'] . ': ' . $NewEventData['endTime'] . "\n";
-        $mText .= $GLOBALS['TL_LANG']['MSC']['caledit_title'] . ': ' . $NewEventData['title'] . "\n";
-        if ($NewEventData['published']) {
-            $mText .= $GLOBALS['TL_LANG']['MSC']['caledit_publishedEvent'];
-        } else {
-            $mText .= $GLOBALS['TL_LANG']['MSC']['caledit_unpublishedEvent'];
-        }
-
-        if ($cloneDates) {
-            $mText .= "\n\n" . $GLOBALS['TL_LANG']['MSC']['caledit_MailEventWasCloned'] . "\n" . $cloneDates;
-        }
-
-        if (!$this->caledit_allowPublish) {
-            $mText .= "\n\n" . $GLOBALS['TL_LANG']['MSC']['caledit_BEUserHint'];
-        }
-        $notification->text = $mText;
-
         foreach ($arrRecipients as $rec) {
             $notification->sendTo($rec);
         }
