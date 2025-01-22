@@ -1418,6 +1418,7 @@ class ModuleEventEditor extends Events
 
     protected function sendNotificationMail($NewEventData, $editID, $User, $cloneDates) : void
     {
+        $this->initializeLogger();
         $this->initializeServices();
         $currentRequest = $this->requestStack->getCurrentRequest();
 
@@ -1463,6 +1464,8 @@ class ModuleEventEditor extends Events
 
         // Den generierten Text aus dem Template holen
         $notification->text = $template->parse();
+
+        $this->logger('sendNotificationMail' . $templateName. " - " . $notification->text);
 
         // Empfänger aufteilen
         $arrRecipients = StringUtil::trimsplit(',', $this->caledit_mailRecipient);
