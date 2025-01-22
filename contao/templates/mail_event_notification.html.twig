@@ -1,0 +1,34 @@
+{# mail_event_notification.html.twig #}
+
+{# Betreffzeile mit dynamischem Titel #}
+{% set subject = subjectKey %}
+
+{# E-Mail-Inhalt #}
+{{ localization.caledit_MailEventdata }}
+
+{% if isFrontendUser %}
+    {{ localization.caledit_MailUser|format(recipientName) }}
+{% else %}
+    {{ localization.caledit_MailUnregisteredUser }}
+{% endif %}
+
+{{ localization.caledit_startdate }}: {{ event.startDate }}
+{{ localization.caledit_enddate }}: {{ event.endDate }}
+{{ localization.caledit_starttime }}: {{ event.startTime }}
+{{ localization.caledit_endtime }}: {{ event.endTime }}
+{{ localization.caledit_title }}: {{ event.title }}
+
+{% if event.published %}
+    {{ localization.caledit_publishedEvent }}
+{% else %}
+    {{ localization.caledit_unpublishedEvent }}
+{% endif %}
+
+{% if cloneDates %}
+    {{ localization.caledit_MailEventWasCloned }}
+    {{ cloneDates }}
+{% endif %}
+
+{% if not allowPublish %}
+    {{ localization.caledit_BEUserHint }}
+{% endif %}
