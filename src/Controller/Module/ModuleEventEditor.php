@@ -1418,7 +1418,6 @@ class ModuleEventEditor extends Events
 
     protected function sendNotificationMail($NewEventData, $editID, $User, $cloneDates) : void
     {
-        $this->initializeLogger();
         $this->initializeServices();
         $currentRequest = $this->requestStack->getCurrentRequest();
 
@@ -1432,16 +1431,16 @@ class ModuleEventEditor extends Events
         // Template-Name basierend auf Aktion bestimmen
         if ($editID) {
             if ($editID == -1) {
-                //Wenn ein Event gelöscht wird
+                // Wenn ein Event gelöscht wird
                 $templateName = 'mail_event_subject_delete';
                 $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectDelete'], $host);
             } else {
-                //Wenn ein Event geändert wird
+                // Wenn ein Event geändert wird
                 $templateName = 'mail_event_subject_edit';
                 $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectEdit'], $host);
             }
         } else {
-            //Wenn ein Event erstellt wird
+            // Wenn ein Event erstellt wird
             $templateName = 'mail_event_notification';
             $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectNew'], $host);
         }
@@ -1465,8 +1464,6 @@ class ModuleEventEditor extends Events
         // Den generierten Text aus dem Template holen
         $notification->text = $template->parse();
 
-        $this->logger('sendNotificationMail' . $templateName. " - " . $notification->text);
-
         // Empfänger aufteilen
         $arrRecipients = StringUtil::trimsplit(',', $this->caledit_mailRecipient);
 
@@ -1475,6 +1472,7 @@ class ModuleEventEditor extends Events
             $notification->sendTo($rec);
         }
     }
+
     /**
      * Generate module
      */
