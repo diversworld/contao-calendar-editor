@@ -34,13 +34,16 @@
     "contao-manager-plugin": "Diversworld\\CalendarEditorBundle\\ContaoManager\\Plugin"
   },
   "config": {
-    "minimum-stability": "stable",
-    "prefer-stable": true,
     "allow-plugins": {
-      "contao/manager-plugin": true,
-      "contao-components/installer": true,
+      "contao/manager-plugin": false,
+      "contao-components/installer": false,
       "dealerdirect/phpcodesniffer-composer-installer": true
     }
+  },
+  "scripts": {
+    "cs-fixer": "@php tools/ecs/vendor/bin/ecs check config/ contao/ src/ tests/ --config tools/ecs/config.php --fix --ansi",
+    "unit-tests": "@php tools/phpunit/vendor/bin/phpunit -c tools/phpunit/phpunit.xml.dist",
+    "phpstan": "@php tools/phpstan/vendor/bin/phpstan analyse src tests"
   },
   "version": "5.0.4"
 }

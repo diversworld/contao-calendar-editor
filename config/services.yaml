@@ -13,6 +13,10 @@ services:
       calls:
         - [ setContainer, [ '@service_container' ] ]
 
+  Diversworld\CalendarEditorBundle\:
+    resource: ../src/
+    exclude: ../src/{DependencyInjection,Model}
+
   Diversworld\CalendarEditorBundle\Controller\Module\ModuleCalendarEdit:
     calls:
       - [ setCheckAuthService, [ '@Diversworld\CalendarEditorBundle\Services\CheckAuthService' ] ]

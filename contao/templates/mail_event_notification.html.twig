@@ -1,25 +1,21 @@
-Subject: Thekendienst im Thekendienstkalender auf {{host}} eingetragen
+Subject: Thekendienst im Thekendienstkalender auf {{ host }} eingetragen
 
 {% if hasFrontendUser %}
-Benutzer: {{user}}
+Benutzer: {{ user }}
 {% else %}
 Ein nicht registrierter Benutzer hat die Änderungen vorgenommen.
 {% endif %}
 
-Titel: {{title}}
-Startdatum: {{startDate}}
-Enddatum: {{endDate}}
-Startzeit: {{startTime}}
-Endzeit: {{endTime}}
+Titel: {{ title }}
+Startdatum: {{ startDate }}
+Enddatum: {{ endDate }}
+Startzeit: {{startTime }}
+Endzeit: {{ endTime }}
 
 {% if published %}
 Das Event ist veröffentlicht.
 {% else %}
 Das Event ist nicht veröffentlicht.
-{% endif %}
-
-{% if cloneDates %}
-Das Event wurde geklont: {{cloneDates}}
 {% endif %}
 
 {% if not allowPublish %}

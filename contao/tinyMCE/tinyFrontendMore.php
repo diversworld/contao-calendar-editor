@@ -22,16 +22,25 @@
  * http://tinymce.moxiecode.com for more information.
  */
 
-if ($GLOBALS['TL_CONFIG']['useRTE']): ?>
 
+use Contao\System;
+
+if ($GLOBALS['TL_CONFIG']['useRTE']): ?>
 <?php $container = System::getContainer(); ?>
 <script src="<?php echo $container->get('contao.assets.assets_context')->getStaticUrl(); ?>assets/tinymce4/js/tinymce.min.js"></script>
 <script>tinymce.init({
 	selector:'textarea#ctrl_details, textarea#ctrl_teaser',
-	menubar : false,
 	language : "<?php echo $this->language; ?>",
-	plugins : 'link, table, paste',
-	toolbar1: "link unlink | undo redo | bold italic underline | bullist numlist | removeformat",
+	plugins : 'link, table, paste, charmap',
+	menu : {
+        edit   : {title : 'Edit'  , items : 'undo redo | cut copy paste pastetext | selectall'},
+        format : {title : 'Format', items : 'bold italic underline strikethrough superscript subscript | formats | removeformat'},
+        table  : {title : 'Table' , items : 'inserttable tableprops deletetable | cell row column'},
+        tools  : {title : 'Tools' , items : 'spellchecker code'}
+    },
+	toolbar1: "link unlink | undo redo | styleselect | bold italic underline | removeformat | image",
+	toolbar2: "alignleft aligncenter alignright | outdent indent | bullist numlist | table | charmap",
+
 	resize: true,
 	paste_word_valid_elements: "b,strong,i,em,h1,h2,p"
 
