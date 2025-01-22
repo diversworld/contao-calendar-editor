@@ -1431,13 +1431,16 @@ class ModuleEventEditor extends Events
         // Template-Name basierend auf Aktion bestimmen
         if ($editID) {
             if ($editID == -1) {
+                //Wenn ein Event gelöscht wird
                 $templateName = 'mail_event_subject_delete';
                 $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectDelete'], $host);
             } else {
+                //Wenn ein Event geändert wird
                 $templateName = 'mail_event_subject_edit';
                 $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectEdit'], $host);
             }
         } else {
+            //Wenn ein Event erstellt wird
             $templateName = 'mail_event_notification';
             $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectNew'], $host);
         }
