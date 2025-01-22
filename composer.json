@@ -1,45 +1,45 @@
 {
   "name": "diversworld/contao-calendar-editor",
   "description": "Contao Extension to create and edit calendar events in the frontend.",
-  "keywords": ["contao",
-			   "calendar",
-			   "calendar_editor",
-			   "calendar editor",
-			   "calendar frontend",
-			   "events", "frontend",
-			   "events frontend"],
+  "keywords": ["contao", "events", "frontend"],
   "type": "contao-bundle",
-  "homepage": "https://github.com/diversworld/contao-calendar-editor",
-  "license": "LGPL-3.0-or-later",
-
-    "require": {
-      "php": "^8.1",
-      "contao/core-bundle": "~5.3" ,
-      "contao/calendar-bundle": "^5.3",
-      "menatwork/contao-multicolumnwizard-bundle": "^3.0"
-    },
-	"autoload": {
-		"psr-4": {
-			"Diversworld\\CalendarEditorBundle\\": "src/"
-		},
-        "classmap": [
-            "src/contao/"
-		],
-		"exclude-from-classmap": [
-            "contao/config/",
-            "contao/dca/",
-            "contao/languages/",
-            "contao/templates/"
-		]
-  	},
-	"extra":{
-		"contao-manager-plugin": "Diversworld\\CalendarEditorBundle\\ContaoManager\\Plugin"
-	},
+  "license": "LGPL-3.0+",
+  "authors": [
+    {
+      "name": "Eckhard Becker Cupic",
+      "email": "info@diversworld.eu",
+      "homepage": "https://github.com/diversworld",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "issues": "https://github.com/diversworld/contao-calendar-editor/issues",
+    "source": "https://github.com/diversworld/contao-calendar-editor"
+  },
+  "require": {
+    "php": "^8.1",
+    "contao/core-bundle": "~5.3",
+    "contao/calendar-bundle": "^5.3",
+    "menatwork/contao-multicolumnwizard-bundle": "^3.0"
+  },
+  "require-dev": {
+    "contao/easy-coding-standard": "^5.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Diversworld\\CalendarEditorBundle\\": "src/"
+    }
+  },
+  "extra": {
+    "contao-manager-plugin": "Diversworld\\CalendarEditorBundle\\ContaoManager\\Plugin"
+  },
   "config": {
+    "minimum-stability": "stable",
+    "prefer-stable": true,
     "allow-plugins": {
+      "contao/manager-plugin": true,
       "contao-components/installer": true,
-      "php-http/discovery": true,
-      "contao-community-alliance/composer-plugin": true
+      "dealerdirect/phpcodesniffer-composer-installer": true
     }
   },
   "version": "5.0.3"

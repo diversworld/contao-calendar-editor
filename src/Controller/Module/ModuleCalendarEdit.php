@@ -3,7 +3,6 @@
 namespace Diversworld\CalendarEditorBundle\Controller\Module;
 
 use Contao\BackendTemplate;
-use Contao\CoreBundle\Security\Authentication\Token\TokenChecker;
 use Contao\Date;
 use Contao\FrontendUser;
 use Contao\PageModel;
@@ -13,7 +12,6 @@ use Diversworld\CalendarEditorBundle\Models\CalendarModelEdit;
 use Diversworld\CalendarEditorBundle\Services\CheckAuthService;
 use Contao\ModuleCalendar;
 use Contao\CoreBundle\Routing\ScopeMatcher;
-use Doctrine\DBAL\Connection;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
