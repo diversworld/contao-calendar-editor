@@ -14,6 +14,7 @@ use Contao\ModuleCalendar;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Routing\RouterInterface;
 
 class ModuleCalendarEdit extends ModuleCalendar
 {
@@ -24,19 +25,12 @@ class ModuleCalendarEdit extends ModuleCalendar
     private ScopeMatcher $scopeMatcher; // Dependency Injection für ScopeMatcher
     private RequestStack $requestStack; // Dependency Injection für RequestStack
     private ?CheckAuthService $checkAuthService;
-
     private LoggerInterface $logger;
 
     protected function initializeLogger(): void
     {
         $this->logger = System::getContainer()->get('monolog.logger.contao.general');
     }
-
-    public function setCheckAuthService(CheckAuthService $checkAuthService): void
-    {
-        $this->checkAuthService = $checkAuthService;
-    }
-
     protected function initializeServices(): void
     {
         $container = System::getContainer();
