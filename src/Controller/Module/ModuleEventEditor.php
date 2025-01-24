@@ -390,6 +390,8 @@ class ModuleEventEditor extends Events
     {
         // Fill fields with data from $currentEventObject
         $newEventData['startDate'] = $currentEventObject->startDate;
+        $this->logger->info('newEventData[startDate]: ' .  $newEventData['startDate'] );
+
         $newEventData['endDate'] = $currentEventObject->endDate;
         if ($currentEventObject->addTime) {
             $newEventData['startTime'] = $currentEventObject->startTime;
@@ -610,15 +612,20 @@ class ModuleEventEditor extends Events
         $newEventData = [];
         $NewContentData = [];
         $newEventData['startDate'] = $newDate;
+        $this->logger->info('newDate: ' .  $newEventData['startDate'] );
 
         $published = $currentEventObject?->published;
 
         // Abrufen der aktuellen URL
         $currentUrl = $currentRequest->getUri();
 
+        $this->logger->info('EditID: '. $editID);
+
         if ($editID) {
             // get a proper Content-Element
             $this->getContentElements($editID, $contentID, $NewContentData);
+            $this->logger->info('NewContentData: ' .print_r($NewContentData, true));
+
             // get the rest of the event data
             $this->getEventInformation($currentEventObject, $newEventData);
 
@@ -663,9 +670,11 @@ class ModuleEventEditor extends Events
             $NewContentData['text']     = $currentRequest->request->get('details', true);
             $newEventData['cssClass']   = $currentRequest->request->get('cssClass');
             $newEventData['pid']        = $currentRequest->request->get('pid');
-            $newEventData['published']  = $currentRequest->request->get('published');
+            $newEventData['published']  = $currentRequest->request->get('published') ? 1 : 0;
             $saveAs                     = $currentRequest->request->get('saveAs') ?? 0;
             $jumpToSelection            = $currentRequest->request->get('jumpToSelection');
+
+            $this->logger->info('Post newEventData[startDate]: ' .  $newEventData['startDate'] );
 
             if ($published && !$this->caledit_allowPublish) {
                 // this should never happen, except the FE user is manipulating
@@ -698,6 +707,8 @@ class ModuleEventEditor extends Events
 
         // fill template with fields ...
         $fields = [];
+
+        $this->logger->info('Fields newEventData[startDate]: ' .  $newEventData['startDate'] );
 
         if ($this->caledit_useDatePicker) {
             //$this->addDatePicker($fields['startDate']);
@@ -932,23 +943,6 @@ class ModuleEventEditor extends Events
         }
 
         // Create jump-to-selection
-        /*$JumpOpts = ['new' => 'new', 'view' => 'view', 'edit' => 'edit', 'clone' => 'clone'];
-        $JumpRefs = [
-            'new' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToNew'],
-            'view' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToView'],
-            'edit' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToEdit'],
-            'clone' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToClone']
-        ];*/
-
-        // Umwandlung in Contao-konforme Struktur
-        /*$JumpOptions = [];
-        foreach ($JumpOpts as $key => $value) {
-            $JumpOptions[$key] = [
-                'value' => $value,
-                'label' => $JumpRefs[$key] ?? $value
-            ];
-        }*/
-
         // Formularfeld definieren
         $fields['jumpToSelection'] = [
             'name' => 'jumpToSelection',
@@ -1053,12 +1047,16 @@ class ModuleEventEditor extends Events
             }
 
             if (is_null($newEventData['published'])) {
-                $newEventData['published'] = '';
+                $newEventData['published'] = 0;
             }
 
             if (is_null($newEventData['location'])) {
                 $newEventData['location'] = '';
             }
+
+            $this->logger->info('New EventData: ' . print_r($newEventData, true));
+            $this->logger->info('New EventData: ' . print_r($fields, true));
+            $this->logger->info('New EventData: ' . print_r($arrWidgets, true));
 
             if ($saveAs === 0) {
                 $dbId = $this->saveToDB($newEventData, '', $NewContentData, '');
@@ -1491,10 +1489,6 @@ class ModuleEventEditor extends Events
         $template->published = $NewEventData['published'];
         $template->cloneDates = $cloneDates;
         $template->allowPublish = $this->caledit_allowPublish;
-
-        $this->logger->info('Template host: ' . $template->host);
-        $this->logger->info('Template user: ' . $template->user);
-        $this->logger->info('Template title: ' . $template->title);
 
         // Den generierten Text aus dem Template holen
         $templateContent = $template->parse();
