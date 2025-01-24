@@ -100,6 +100,6 @@ Now it works like this:
 
 If you like this extension and think it's worth a little donation: You can support me via Paypal.Me:
 
-[Donation for CalendarEditor](https://paypal.me/CalendarEditor/10)
+[Donation for CalendarEditor](https://paypal.me/EckhardBecker615)
 
 Thank You!
