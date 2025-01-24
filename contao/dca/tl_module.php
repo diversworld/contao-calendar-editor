@@ -16,6 +16,7 @@
  *
  */
 use Contao\Backend;
+use Contao\BackendUser;
 use Contao\System;
 use \Symfony\Component\DependencyInjection\ContainerAwareInterface;
 use \Symfony\Component\DependencyInjection\ContainerAwareTrait;
@@ -26,21 +27,20 @@ use \Symfony\Component\DependencyInjection\ContainerAwareTrait;
  $GLOBALS['TL_DCA']['tl_module']['palettes']['calendarEdit']        =  $GLOBALS['TL_DCA']['tl_module']['palettes']['calendar'].';{edit_legend},caledit_add_jumpTo; {edit_holidays},cal_holidayCalendar' ;
  $GLOBALS['TL_DCA']['tl_module']['palettes']['EventReaderEditLink'] = '{title_legend},name,headline,type;{config_legend},cal_calendar,caledit_showDeleteLink,caledit_showCloneLink';
  $GLOBALS['TL_DCA']['tl_module']['palettes']['EventHiddenList']     = $GLOBALS['TL_DCA']['tl_module']['palettes']['eventlist'];
- $GLOBALS['TL_DCA']['tl_module']['palettes']['EventEditor']
- = '{title_legend},name,headline,type;{redirect_legend},jumpTo;'
-   .'{config_legend},cal_calendar,caledit_mandatoryfields,caledit_alternateCSSLabel,caledit_usePredefinedCss;'
-   .'{caledit_setting_publish},caledit_allowPublish,caledit_allowDelete,caledit_allowClone,caledit_sendMail;'
-   .'{template_legend},caledit_template,caledit_delete_template, caledit_clone_template, caledit_tinMCEtemplate,'
-   // some options from the calendarfield extension
-   .'caledit_useDatePicker ;'
-   .'{protected_legend:hide},protected;{expert_legend:hide},guests,cssID,space';
+ $GLOBALS['TL_DCA']['tl_module']['palettes']['EventEditor']         = '{title_legend},name,headline,type;{redirect_legend},jumpTo;'
+                                                                       .'{config_legend},cal_calendar,caledit_mandatoryfields,caledit_alternateCSSLabel,caledit_usePredefinedCss;'
+                                                                       .'{caledit_setting_publish},caledit_allowPublish,caledit_allowDelete,caledit_allowClone,caledit_sendMail,caledit_mailSubject,caledit_mailTemplate;'
+                                                                       .'{template_legend},caledit_template,caledit_delete_template, caledit_clone_template, caledit_tinMCEtemplate,'
+                                                                       // some options from the calendarfield extension
+                                                                       .'caledit_useDatePicker ;'
+                                                                       .'{protected_legend:hide},protected;{expert_legend:hide},guests,cssID,space';
 
 
 
  $GLOBALS['TL_DCA']['tl_module']['subpalettes']['caledit_usePredefinedCss'] = 'caledit_cssValues';
  $GLOBALS['TL_DCA']['tl_module']['subpalettes']['caledit_sendMail']         = 'caledit_mailRecipient';
- $GLOBALS['TL_DCA']['tl_module']['subpalettes']['cal_holidayCalendar'] = 'cal_holidayCalendar';
- $GLOBALS['TL_DCA']['tl_module']['subpalettes']['caledit_useDatePicker'] = 'caledit_dateIncludeCSSTheme, caledit_dateImage, caledit_dateImageSRC,caledit_dateDirection ';
+ $GLOBALS['TL_DCA']['tl_module']['subpalettes']['cal_holidayCalendar']      = 'cal_holidayCalendar';
+ $GLOBALS['TL_DCA']['tl_module']['subpalettes']['caledit_useDatePicker']    = 'caledit_dateIncludeCSSTheme, caledit_dateImage, caledit_dateImageSRC,caledit_dateDirection ';
 
  $GLOBALS['TL_DCA']['tl_module']['palettes']['__selector__'][] = 'caledit_usePredefinedCss';
  $GLOBALS['TL_DCA']['tl_module']['palettes']['__selector__'][] = 'caledit_sendMail';
@@ -84,6 +84,23 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_mailRecipient'] = array
 	'inputType'               => 'text',
 	'eval'                    => array('maxlength'=>255, 'tl_class'=>'w50'),
 	'sql'					  => "varchar(255) NOT NULL default ''"
+);
+$GLOBALS['TL_DCA']['tl_module']['fields']['caledit_mailSubject'] = array
+(
+    'label'                   => &$GLOBALS['TL_LANG']['tl_module']['caledit_mailSubject'],
+    'inputType'               => 'text',
+    'eval'                    => array('maxlength'=>255, 'tl_class'=>'w50'),
+    'sql'					  => "varchar(255) NOT NULL default ''"
+);
+$GLOBALS['TL_DCA']['tl_module']['fields']['caledit_mailTemplate'] = array
+(
+    'label'                   => &$GLOBALS['TL_LANG']['tl_module']['caledit_mailTemplate'],
+    'default'                 => 'mail_event_notification',
+    'exclude'                 => true,
+    'inputType'               => 'select',
+    'options_callback'        => array('calendar_eventeditor', 'getEventMailTemplates'),
+    'eval'                    => array ('tl_class'=>'clr w50'),
+    'sql'					  => "varchar(32) NOT NULL default ''"
 );
 
 $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_mandatoryfields'] = array
@@ -283,6 +300,15 @@ class calendar_eventeditor extends Backend //implements ContainerAwareInterface
 	{
 		return $this->getTemplateGroup('eventEdit_');
 	}
+    /**
+     * Return all event templates as array
+     * @param object
+     * @return array
+     */
+    public function getEventMailTemplates()
+    {
+        return $this->getTemplateGroup('mail_event_');
+    }
 
 	public function getCSSValues()
 	{
@@ -341,7 +367,7 @@ class calendar_eventeditor extends Backend //implements ContainerAwareInterface
         $rootDir = System::getContainer()->getParameter('kernel.project_dir');
 
         // Define the path to the tinyMCE configuration files
-        $tinyMCEPath = $rootDir . '/vendor/diversworld/contao-calendar-editor/src/Resources/contao/tinyMCE/';
+        $tinyMCEPath = $rootDir . '/vendor/diversworld/contao-calendar-editor/src/contao/tinyMCE/';
 
         // Check if the directory exists
         if (is_dir($tinyMCEPath)) {

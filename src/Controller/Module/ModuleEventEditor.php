@@ -697,35 +697,62 @@ class ModuleEventEditor extends Events
 
         // fill template with fields ...
         $fields = [];
-        $fields['startDate'] = [
-            'name' => 'startDate',
-            'label' => $GLOBALS['TL_LANG']['MSC']['caledit_startdate'],
-            'inputType' => 'text', // or: 'calendarfield' (see below),
-            'value' => $newEventData['startDate'],
-            'eval' => [
-                'rgxp' => 'date',
-                'mandatory' => true,
-                'decodeEntities' => true
-            ]
-        ];
 
-        $fields['endDate'] = [
-            'name' => 'endDate',
-            'label' => $GLOBALS['TL_LANG']['MSC']['caledit_enddate'],
-            'inputType' => 'text',
-            'value' => $newEventData['endDate'] ?? null,
-            'eval' => [
-                'rgxp' => 'date',
-                'mandatory' => false,
-                'maxlength' => 128,
-                'decodeEntities' => true
-            ]
-        ];
+        if ($this->caledit_useDatePicker) {
+            //$this->addDatePicker($fields['startDate']);
+            //$this->addDatePicker($fields['endDate']);
+            $fields['startDate'] = [
+                'name' => 'startDate',
+                'label' => $GLOBALS['TL_LANG']['MSC']['caledit_startdate'],
+                'inputType' => 'text', // or: 'calendarfield' (see below),
+                'value' => $newEventData['startDate'],
+                'eval' => [
+                    'rgxp' => 'date',
+                    'mandatory' => true,
+                    'decodeEntities' => true,
+                    'datepicker' => true
+                ]
+            ];
 
-        /*if ($this->caledit_useDatePicker) {
-            $this->addDatePicker($fields['startDate']);
-            $this->addDatePicker($fields['endDate']);
-        }*/
+            $fields['endDate'] = [
+                'name' => 'endDate',
+                'label' => $GLOBALS['TL_LANG']['MSC']['caledit_enddate'],
+                'inputType' => 'text',
+                'value' => $newEventData['endDate'] ?? null,
+                'eval' => [
+                    'rgxp' => 'date',
+                    'mandatory' => false,
+                    'maxlength' => 128,
+                    'decodeEntities' => true,
+                    'datepicker' => true
+                ]
+            ];
+        } else {
+            $fields['startDate'] = [
+                'name' => 'startDate',
+                'label' => $GLOBALS['TL_LANG']['MSC']['caledit_startdate'],
+                'inputType' => 'text', // or: 'calendarfield' (see below),
+                'value' => $newEventData['startDate'],
+                'eval' => [
+                    'rgxp' => 'date',
+                    'mandatory' => true,
+                    'decodeEntities' => true
+                ]
+            ];
+
+            $fields['endDate'] = [
+                'name' => 'endDate',
+                'label' => $GLOBALS['TL_LANG']['MSC']['caledit_enddate'],
+                'inputType' => 'text',
+                'value' => $newEventData['endDate'] ?? null,
+                'eval' => [
+                    'rgxp' => 'date',
+                    'mandatory' => false,
+                    'maxlength' => 128,
+                    'decodeEntities' => true
+                ]
+            ];
+        }
 
         $fields['startTime'] = [
             'name' => 'startTime',
@@ -1428,7 +1455,8 @@ class ModuleEventEditor extends Events
 
         // Abrufen der aktuellen URL
         $host = $currentRequest->getHost();
-
+        $this->logger->info('Host: ' . $host . ' - ' . $User . ' - Betreff: ' . $this->caledit_mailSubject. ' - ' . sprintf($this->caledit_mailSubject, $host));
+        $mailSubject = $this->caledit_mailSubject;
         // Template-Name basierend auf Aktion bestimmen
         if ($editID) {
             if ($editID == -1) {
@@ -1443,7 +1471,8 @@ class ModuleEventEditor extends Events
         } else {
             // Wenn ein Event erstellt wird
             $templateName = 'mail_event_notification';
-            $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectNew'], $host);
+            $notification->subject = $mailSubject; //($mailSubject, $host);
+            //$notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectNew'], $host);
         }
 
         // Template laden

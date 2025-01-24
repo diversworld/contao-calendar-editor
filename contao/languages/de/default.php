@@ -47,10 +47,10 @@ $GLOBALS['TL_LANG']['MSC']['caledit_JumpToView']    = 'Diesen Termin auf der Web
 $GLOBALS['TL_LANG']['MSC']['caledit_JumpToEdit']    = 'Diesen Termin weiter bearbeiten';
 $GLOBALS['TL_LANG']['MSC']['caledit_JumpToClone']   = 'Diesen Termin duplizieren';
 
-$GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectNew'] = "Ein neuer Thekendienst wurde auf %s eingetragen";
-$GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectEdit'] = "Ein Thekendienst wurde bearbeitet auf %s";
-$GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectDelete'] = "Ein Thekendienst wurde gelöscht auf %s";
-$GLOBALS['TL_LANG']['MSC']['caledit_MailEventWasCloned'] = "Das Thekendienst wurde dupliziert. Neue Termine: ";
+$GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectNew'] = "Ein neuer Event wurde auf %s eingetragen";
+$GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectEdit'] = "Ein Event wurde bearbeitet auf %s";
+$GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectDelete'] = "Ein Event wurde gelöscht auf %s";
+$GLOBALS['TL_LANG']['MSC']['caledit_MailEventWasCloned'] = "Das Event wurde dupliziert. Neue Termine: ";
 $GLOBALS['TL_LANG']['MSC']['caledit_MailEventdata'] = "Eventdaten:";
 $GLOBALS['TL_LANG']['MSC']['caledit_MailUser'] = "User: %s";
 $GLOBALS['TL_LANG']['MSC']['caledit_MailUnregisteredUser'] = "User: (nicht registrierter Nutzer)";
