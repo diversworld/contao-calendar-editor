@@ -27,6 +27,7 @@ use Contao\Events;
 use Contao\FrontendTemplate;
 use Doctrine\DBAL\Connection;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Contao\CoreBundle\Security\Authentication\Token\TokenChecker;
 use Symfony\Component\Routing\Generator\UrlGenerator;
@@ -334,7 +335,7 @@ class ModuleEventEditor extends Events
                         $jumpTo = '?edit=' . $DBid; // Event nicht veröffentlicht, Bearbeitungslink
                     }
                 } else {
-                    throw new \RuntimeException("Event with ID $DBid not found.");
+                    throw new RuntimeException("Event with ID $DBid not found.");
                 }
                 break;
 

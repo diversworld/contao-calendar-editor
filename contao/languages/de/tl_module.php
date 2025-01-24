@@ -28,6 +28,8 @@ $GLOBALS['TL_LANG']['tl_module']['caledit_sendMail']['0'] = "E-Mail-Benachrichti
 $GLOBALS['TL_LANG']['tl_module']['caledit_sendMail']['1'] = "Sendet eine Benachrichtigungs-E-Mail, wenn ein neuer Termin erstellt, oder ein vorhandener bearbeitet wird.";
 $GLOBALS['TL_LANG']['tl_module']['caledit_mailRecipient']['0'] = "E-Mail Empfänger";
 $GLOBALS['TL_LANG']['tl_module']['caledit_mailRecipient']['1'] = "Geben Sie die E-Mail-Adresse an, an die die Benachrichtigung geschickt werden soll. Sie können auch mehrere Adressen durch Kommata getrennt angeben.";
+$GLOBALS['TL_LANG']['tl_module']['caledit_mailSubject']['0'] = "Betreff der Mail (optional)";
+$GLOBALS['TL_LANG']['tl_module']['caledit_mailSubject']['1'] = "Bitte gebe den Betreff, der in der Benachrichtigung angezeigt werden soll, an.";
 $GLOBALS['TL_LANG']['tl_module']['caledit_alternateCSSLabel']['0'] = "Bezeichnung für das Feld \"CSS-Klasse\"";
 $GLOBALS['TL_LANG']['tl_module']['caledit_alternateCSSLabel']['1'] = "Geben Sie eine alternative Bezeichnung für das Feld \"CSS-Klasse\" an (z.B. \"Ort\", oder \"Trainer\").";
 $GLOBALS['TL_LANG']['tl_module']['caledit_mandatoryfields']['0'] = "Weitere Pflichtfelder";
@@ -55,7 +57,7 @@ $GLOBALS['TL_LANG']['tl_module']['caledit_holidayCalendar']['1'] = "Geben Sie de
 
 $GLOBALS['TL_LANG']['tl_module']['caledit_useDatePicker']['0'] = "Date-Picker benutzen (erfordert jQuery)";
 $GLOBALS['TL_LANG']['tl_module']['caledit_useDatePicker']['1'] = "Fügt bei den Datumsfeldern einen jQuery-Kalender hinzu, um das Datum auswählen zu können. Im Seitenlayout muss die Option 'jQuery laden' aktiviert sein.";
- 
+
 $GLOBALS['TL_LANG']['tl_module']['caledit_dateDirection']          = array('Datumsrichtung', 'Wählen Sie ob die Datumsauswahl eingeschränkt werden soll.');
 $GLOBALS['TL_LANG']['tl_module']['caledit_dateIncludeCSSTheme']    = array('jQuery UI Theme', 'Wählen Sie das zu verwendende jQuery UI Theme aus (externes Stylesheet). Weitere Informationen dazu gibt es auf der jQuery UI Webseite <a hre="http://jqueryui.com/themeroller">http://jqueryui.com/themeroller</a>. Lassen Sie das Feld leer, wenn Sie den Kalender über ein eigenes CSS gestalten wollen.');
 $GLOBALS['TL_LANG']['tl_module']['caledit_dateImage']              = array('Kalender-Icon anzeigen', 'Klicken Sie hier um das Kalender-Icon anzuzeigen.');
@@ -65,6 +67,6 @@ $GLOBALS['TL_LANG']['tl_module']['caledit_dateDirection_ref']['all']     = 'Alle
 $GLOBALS['TL_LANG']['tl_module']['caledit_dateDirection_ref']['ltToday'] = 'Nur Datum in der Vergangenheit (exkl. Heute)';
 $GLOBALS['TL_LANG']['tl_module']['caledit_dateDirection_ref']['leToday'] = 'Nur Datum in der Vergangenheit (inkl. Heute)';
 $GLOBALS['TL_LANG']['tl_module']['caledit_dateDirection_ref']['geToday'] = 'Nur Datum in der Zukunft (inkl. Heute)';
-$GLOBALS['TL_LANG']['tl_module']['caledit_dateDirection_ref']['gtToday'] = 'Nur Datum in der Zukunft (exkl. Heute)'; 
- 
+$GLOBALS['TL_LANG']['tl_module']['caledit_dateDirection_ref']['gtToday'] = 'Nur Datum in der Zukunft (exkl. Heute)';
+
 ?>
