@@ -433,6 +433,7 @@ class ModuleEventEditor extends Events
         $this->Template->CurrentPublished = $currentEventObject->published;
 
         if ($currentEventObject->published) {
+            //ToDo: der link muss noch aktualisiert werden
             //$this->Template->CurrentEventLink = $urlGenerator->generate($currentEventObject->getRelated('pid'),['alias' => $currentEventObject->alias,'context' => 'edit',]);
             $this->Template->CurrentEventLink = '';
             $this->Template->CurrentPublishedInfo = $GLOBALS['TL_LANG']['MSC']['caledit_publishedEvent'];
