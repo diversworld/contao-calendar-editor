@@ -1081,6 +1081,8 @@ class ModuleEventEditor extends Events
                     $this->sendNotificationMail($newEventData, $editID, $this->User->username, '');
                 }
             }
+            $this->logger->info('jumpToSelection: '. print_r($jumpToSelection,true) . " dbId: " . $dbId);
+
             $this->generateRedirect($jumpToSelection, $dbId);
         } else {
             // Do NOT Submit
