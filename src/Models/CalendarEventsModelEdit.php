@@ -9,31 +9,17 @@ use Psr\Log\LoggerInterface;
 
 class CalendarEventsModelEdit extends CalendarEventsModel
 {
-    static private LoggerInterface $logger;
-
-    static function initializeLogger(){
-         static::$logger = System::getContainer()->get('monolog.logger.contao.general');
-    }
-
-    public static function findByIdOrAlias($ids, array $options = []): ?CalendarEventsModel
+    public static function findByIdOrAlias($val, array $opt = []): ?CalendarEventsModel
     {
-        static::initializeLogger();
-        static::$logger->debug('CalendarEventsModelEdit findByIdOrAlias');
-        static::$logger->debug(' CalendarEventsModelEditids:'.$ids);
-
         $t = static::$strTable;
-        $arrColumns = !is_numeric($ids) ? array("$t.alias=?") : array("$t.id=?");
+        $arrColumns = !is_numeric($val) ? array("$t.alias=?") : array("$t.id=?");
 
-        static::$logger->debug('CalendarEventsModelEdit arrColumns: '.print_r($arrColumns,true), ['module' => 'findByIdOrAlias']);
-
-        if (!static::isPreviewMode($options)) {
+        if (!static::isPreviewMode($opt)) {
             $time = Date::floorToMinute();
             $arrColumns[] = "$t.published=1 AND ($t.start='' OR $t.start<=$time) AND ($t.stop='' OR $t.stop>$time)";
         }
 
-        $eventObject = static::findOneBy($arrColumns, $ids, $options);
-
-        static::$logger->debug('CalendarEventsModelEdit static::findOneBy' . print_r($eventObject, true), ['module' => 'findByIdOrAlias']);
+        $eventObject = static::findOneBy($arrColumns, $val, $opt);
 
         //return static::findOneBy($arrColumns, $ids, $options);
         return $eventObject;

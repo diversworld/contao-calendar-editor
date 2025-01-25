@@ -1,8 +1,10 @@
-> Updated version for contao 4.13 based on https://github.com/Diversworld/Contao-CalendarEditor
+> Updated version for contao 4.13 based on https://github.com/wusch/Contao-CalendarEditor
 
 # Contao-CalendarEditor
 
-This is a revision of the module for Contao 3. Essentially, everything should run as it did in Contao 3. The only change is the direct integration of the extension "CalendarField", which allows the use of a jQuery calendar for date fields.
+This is a revision of the module for Contao 3. Essentially, everything should run as it did in Contao 3. 
+The only change isin the actual Version is the direct integration of the extension "CalendarField" is not available, because the calendafield extension is not available for contao5 yet. 
+
 
 ## Features
 
@@ -100,6 +102,6 @@ Now it works like this:
 
 If you like this extension and think it's worth a little donation: You can support me via Paypal.Me:
 
-[Donation for CalendarEditor](https://paypal.me/CalendarEditor/10)
+[Donation for Diversworld CalendarEditor](https://paypal.me/EckhardBecker615)
 
 Thank You!

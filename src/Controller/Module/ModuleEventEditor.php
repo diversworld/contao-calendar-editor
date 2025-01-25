@@ -30,8 +30,11 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Contao\CoreBundle\Security\Authentication\Token\TokenChecker;
+use Contao\CoreBundle\Routing\ContentUrlGenerator;
+use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Generator\UrlGenerator;
 
+#[Route('/{_locale}', name: 'calendar_editor_locale', methods: ['GET'])]
 class ModuleEventEditor extends Events
 {
     /**
@@ -48,8 +51,9 @@ class ModuleEventEditor extends Events
     private TokenChecker $tokenChecker;
     private ?CheckAuthService $checkAuthService = null;
     private Connection $connection;
-
     private LoggerInterface $logger;
+    private readonly ContentUrlGenerator $urlGenerator;
+
     protected function initializeLogger(): void
     {
         $this->logger = System::getContainer()->get('monolog.logger.contao.general');
@@ -301,13 +305,15 @@ class ModuleEventEditor extends Events
 
     public function generateRedirect(string $userSetting, ?int $DBid): void
     {
+        $this->initializeLogger();
         $this->initializeServices();
         $currentRequest = $this->requestStack->getCurrentRequest();
-        //$router = System::getContainer()->get('router'); // Symfony Router
 
         // Abrufen der aktuellen URL ohne Query-Parameter
         $currentUrl = $currentRequest->getUri();
         $jumpTo = preg_replace('/\?.*$/i', '', $currentUrl);
+
+        $this->logger->info("User Setting: $userSetting");
 
         switch ($userSetting) {
             case "":
@@ -322,6 +328,7 @@ class ModuleEventEditor extends Events
 
             case "new":
                 $jumpTo .= '?new=true';
+                $this->logger->info("JumpTo: $jumpTo");
                 break;
 
             case "view":
@@ -340,11 +347,15 @@ class ModuleEventEditor extends Events
                 break;
 
             case "edit":
+                $this->logger->info("Edit event with ID $DBid" . " (jumpTo: $jumpTo)");
                 $jumpTo .= '?edit=' . $DBid;
+                $this->logger->info("JumpTo: $jumpTo");
                 break;
 
             case "clone":
+                $this->logger->info("Clone event with ID $DBid" . " (jumpTo: $jumpTo)");
                 $jumpTo .= '?clone=' . $DBid;
+                $this->logger->info("JumpTo: $jumpTo");
                 break;
 
             default:
@@ -388,11 +399,16 @@ class ModuleEventEditor extends Events
 
     public function getEventInformation($currentEventObject, &$newEventData): void
     {
-        // Fill fields with data from $currentEventObject
-        $newEventData['startDate'] = $currentEventObject->startDate;
-        $this->logger->info('newEventData[startDate]: ' .  $newEventData['startDate'] );
+        $this->initializeLogger();
+        $this->initializeServices();
 
-        $newEventData['endDate'] = $currentEventObject->endDate;
+        //$urlGenerator = new UrlGeneratorInterface::class;
+        $urlGenerator = System::getContainer()->get('contao.routing.content_url_generator');
+
+        // Fill fields with data from $currentEventObject
+        $newEventData['startDate'] = Date::parse($GLOBALS['TL_CONFIG']['dateFormat'], $currentEventObject->startDate);
+
+        $newEventData['endDate'] = Date::parse($GLOBALS['TL_CONFIG']['dateFormat'], $currentEventObject->endDate);
         if ($currentEventObject->addTime) {
             $newEventData['startTime'] = $currentEventObject->startTime;
             $newEventData['endTime'] = $currentEventObject->endTime;
@@ -403,6 +419,7 @@ class ModuleEventEditor extends Events
             $newEventData['startTime'] = '';
             $newEventData['endTime'] = '';
         }
+
         $newEventData['title'] = $currentEventObject->title;
         $newEventData['teaser'] = $currentEventObject->teaser;
         $newEventData['location'] = $currentEventObject->location;
@@ -412,12 +429,13 @@ class ModuleEventEditor extends Events
         $newEventData['alias'] = $currentEventObject->alias;
 
         $this->Template->CurrentTitle = $currentEventObject->title;
-        $this->Template->CurrentDate = $this->Date::parseDate($GLOBALS['TL_CONFIG']['dateFormat'], $currentEventObject->startDate);
+        $this->Template->CurrentDate = Date::parse($GLOBALS['TL_CONFIG']['dateFormat'], $currentEventObject->startDate);
+
         $this->Template->CurrentPublished = $currentEventObject->published;
 
-        $urlGenerator = $this->container->get(UrlGenerator::class);
         if ($currentEventObject->published) {
-            $this->Template->CurrentEventLink = $urlGenerator->generateEventUrl($currentEventObject);
+            //$this->Template->CurrentEventLink = $urlGenerator->generate($currentEventObject->getRelated('pid'),['alias' => $currentEventObject->alias,'context' => 'edit',]);
+            $this->Template->CurrentEventLink = '';
             $this->Template->CurrentPublishedInfo = $GLOBALS['TL_LANG']['MSC']['caledit_publishedEvent'];
         } else {
             $this->Template->CurrentEventLink = '';
@@ -612,22 +630,20 @@ class ModuleEventEditor extends Events
         $newEventData = [];
         $NewContentData = [];
         $newEventData['startDate'] = $newDate;
-        $this->logger->info('newDate: ' .  $newEventData['startDate'] );
 
         $published = $currentEventObject?->published;
 
         // Abrufen der aktuellen URL
         $currentUrl = $currentRequest->getUri();
 
-        $this->logger->info('EditID: '. $editID);
-
         if ($editID) {
             // get a proper Content-Element
             $this->getContentElements($editID, $contentID, $NewContentData);
-            $this->logger->info('NewContentData: ' .print_r($NewContentData, true));
 
             // get the rest of the event data
             $this->getEventInformation($currentEventObject, $newEventData);
+
+            $this->logger->info("New Event Data-StartDate: " . $newEventData['startDate']);
 
             if ($this->caledit_allowDelete) {
                 // add a "Delete this event"-Link
@@ -674,8 +690,6 @@ class ModuleEventEditor extends Events
             $saveAs                     = $currentRequest->request->get('saveAs') ?? 0;
             $jumpToSelection            = $currentRequest->request->get('jumpToSelection');
 
-            $this->logger->info('Post newEventData[startDate]: ' .  $newEventData['startDate'] );
-
             if ($published && !$this->caledit_allowPublish) {
                 // this should never happen, except the FE user is manipulating
                 // the POST-Data with some evil HackerToolz ;-)
@@ -707,8 +721,6 @@ class ModuleEventEditor extends Events
 
         // fill template with fields ...
         $fields = [];
-
-        $this->logger->info('Fields newEventData[startDate]: ' .  $newEventData['startDate'] );
 
         if ($this->caledit_useDatePicker) {
             //$this->addDatePicker($fields['startDate']);
@@ -927,9 +939,11 @@ class ModuleEventEditor extends Events
                 'name' => 'saveAs',
                 'label' => '', // $GLOBALS['TL_LANG']['MSC']['caledit_saveAs']
                 'inputType' => 'checkbox',
-                'value' => $saveAs
+                'value' => $saveAs,
+                'options' =>  [
+                    ['value' => 1, 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_saveAs']]
+                ]
             ];
-            $fields['saveAs']['options']['1'] = $GLOBALS['TL_LANG']['MSC']['caledit_saveAs'];
         }
 
         $hasFrontendUser =  $this->tokenChecker->hasFrontendUser();
@@ -943,7 +957,6 @@ class ModuleEventEditor extends Events
         }
 
         // Create jump-to-selection
-        // Formularfeld definieren
         $fields['jumpToSelection'] = [
             'name' => 'jumpToSelection',
             'label' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpWhatsNext'],
@@ -962,8 +975,7 @@ class ModuleEventEditor extends Events
                 ['value' => 'view', 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToView']],
                 ['value' => 'edit', 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToEdit']],
                 ['value' => 'clone', 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToClone']]
-            ],//$JumpOptions, // Optional für bestimmte Renderer
-            //'arrOptions' => $JumpOptions,
+            ],
             'value' => '', // Vorausgewählter Wert
             'eval' => [
                 'mandatory' => true,
@@ -1006,6 +1018,7 @@ class ModuleEventEditor extends Events
                 'select' => new FormSelect($field),
                 'text' => new FormText($field),
                 'textarea' => new FormTextarea($field),
+                'captcha' => new FormCaptcha($field),
                 default => throw new \InvalidArgumentException("Ungültiger inputType: " . $field['inputType']),
             };
 
@@ -1053,10 +1066,6 @@ class ModuleEventEditor extends Events
             if (is_null($newEventData['location'])) {
                 $newEventData['location'] = '';
             }
-
-            $this->logger->info('New EventData: ' . print_r($newEventData, true));
-            $this->logger->info('New EventData: ' . print_r($fields, true));
-            $this->logger->info('New EventData: ' . print_r($arrWidgets, true));
 
             if ($saveAs === 0) {
                 $dbId = $this->saveToDB($newEventData, '', $NewContentData, '');
@@ -1287,21 +1296,30 @@ class ModuleEventEditor extends Events
         }
 
         // create jump-to-selection
-        $JumpOpts = ['new', 'view', 'edit', 'clone'];
-        $JumpRefs = [
-            'new' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToNew'],
-            'view' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToView'],
-            'edit' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToEdit'],
-            'clone' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToClone']
-        ];
         $fields['jumpToSelection'] = [
             'name' => 'jumpToSelection',
             'label' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpWhatsNext'],
             'inputType' => 'select',
-            'options' => $JumpOpts,
-            'value' => $jumpToSelection,
-            'reference' => $JumpRefs,
-            'eval' => ['mandatory' => false, 'includeBlankOption' => true, 'maxlength' => 128, 'decodeEntities' => true]
+            // arrOptions wird direkt verwendet
+            'options' => [
+                ['value' => '', 'label' => '-'],
+                ['value' => 'new', 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToNew']],
+                ['value' => 'view', 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToView']],
+                ['value' => 'edit', 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToEdit']],
+                ['value' => 'clone', 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToClone']]
+            ],
+            'reference' => [
+                ['value' => '', 'label' => '-'],
+                ['value' => 'new', 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToNew']],
+                ['value' => 'view', 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToView']],
+                ['value' => 'edit', 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToEdit']],
+                ['value' => 'clone', 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpToClone']]
+            ],
+            'value' => '', // Vorausgewählter Wert
+            'eval' => [
+                'mandatory' => true,
+                'includeBlankOption' => true,
+            ]
         ];
 
         // here: CALL Hooks with $NewEventData, $currentEventObject, $fields
@@ -1454,7 +1472,7 @@ class ModuleEventEditor extends Events
 
         // Abrufen der aktuellen URL
         $host = $currentRequest->getHost();
-        $this->logger->info('Host: ' . $host . ' - ' . $User . ' - Betreff: ' . $this->caledit_mailSubject. ' - ' . sprintf($this->caledit_mailSubject, $host));
+
         $mailSubject = $this->caledit_mailSubject;
         // Template-Name basierend auf Aktion bestimmen
         if ($editID) {
@@ -1492,9 +1510,7 @@ class ModuleEventEditor extends Events
 
         // Den generierten Text aus dem Template holen
         $templateContent = $template->parse();
-        $this->logger->info('Parsed Template Content: ' . $templateContent);
         $notification->text = $templateContent;
-        $this->logger->info('Notification text: ' . $notification->text);
 
         // Empfänger aufteilen
         $arrRecipients = StringUtil::trimsplit(',', $this->caledit_mailRecipient);
