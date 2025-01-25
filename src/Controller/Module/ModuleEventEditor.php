@@ -52,7 +52,6 @@ class ModuleEventEditor extends Events
     private ?CheckAuthService $checkAuthService = null;
     private Connection $connection;
     private LoggerInterface $logger;
-    private readonly ContentUrlGenerator $urlGenerator;
 
     protected function initializeLogger(): void
     {
