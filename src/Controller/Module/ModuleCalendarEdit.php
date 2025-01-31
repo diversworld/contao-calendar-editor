@@ -14,7 +14,6 @@ use Contao\ModuleCalendar;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\Routing\RouterInterface;
 
 class ModuleCalendarEdit extends ModuleCalendar
 {

@@ -20,7 +20,6 @@
  * Front end modules
  */
 
-use Diversworld\CalendarEditorBundle\Hooks\ListAllEventsHook;
 use Diversworld\CalendarEditorBundle\Controller\Module\ModuleCalendarEdit;
 use Diversworld\CalendarEditorBundle\Controller\Module\ModuleEventEditor;
 use Diversworld\CalendarEditorBundle\Controller\Module\ModuleEventReaderEdit;

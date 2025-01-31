@@ -17,10 +17,13 @@
  */
 use Contao\Backend;
 use Contao\BackendUser;
+use \Contao\FrontendUser;
 use Contao\System;
-use \Symfony\Component\DependencyInjection\ContainerAwareInterface;
-use \Symfony\Component\DependencyInjection\ContainerAwareTrait;
-/**
+use Doctrine\DBAL\Connection;
+use Psr\Log\LoggerInterface;
+use Symfony\Bundle\SecurityBundle\Security;
+
+/*
  * Add palettes to tl_module
  */
 
@@ -280,13 +283,15 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_dateImageSRC'] = array
 
 class calendar_eventeditor extends Backend //implements ContainerAwareInterface
 {
+    private LoggerInterface $logger;
+
     //use ContainerAwareTrait;
 
 	/**
 	 * Import the back end user object
 	 */
-	public function __construct()
-	{
+    public function __construct(private readonly Security $security)
+    {
 		parent::__construct();
 		//$this->import('BackendUser', 'User');
 	}
@@ -332,28 +337,29 @@ class calendar_eventeditor extends Backend //implements ContainerAwareInterface
           );
 		return $columnFields;
 	}
+
 	public function getCalendars()
 	{
-        // Get the BackendUser from the Symfony container
-        $user = System::getContainer()->get('security.token_storage')->getToken()->getUser();
+        $this->logger = System::getContainer()->get('monolog.logger.contao.general');
 
-        if (!$user instanceof BackendUser || (!$user->isAdmin && !is_array($user->calendars))) {
-            return [];
+        if (!$this->security->isGranted('ROLE_ADMIN') && !is_array($this->User->calendars))
+        {
+            return array();
         }
 
         $arrCalendars = array();
-		$objCalendars = $this->Database->execute("SELECT id, title FROM tl_calendar ORDER BY title");
+        $objCalendars = $this->Database->execute("SELECT id, title FROM tl_calendar ORDER BY title");
 
-		while ($objCalendars->next())
-		{
-			if ($this->User->hasAccess($objCalendars->id, 'calendars'))
-			{
-				$arrCalendars[$objCalendars->id] = $objCalendars->title;
-			}
-		}
+        while ($objCalendars->next())
+        {
+            if ($this->User->hasAccess($objCalendars->id, 'calendars'))
+            {
+                $arrCalendars[$objCalendars->id] = $objCalendars->title;
+            }
+        }
 
-		return $arrCalendars;
-	}
+        return $arrCalendars;
+    }
 
     /**
      * Return a list of tinyMCE config files in this system.
