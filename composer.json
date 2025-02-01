@@ -1,7 +1,7 @@
 {
   "name": "diversworld/contao-calendar-editor",
   "description": "Contao Extension to create and edit calendar events in the frontend.",
-  "keywords": ["contao", "events", "frontend"],
+  "keywords": ["contao", "events", "frontend","calendar","editor"],
   "type": "contao-bundle",
   "license": "LGPL-3.0+",
   "authors": [
