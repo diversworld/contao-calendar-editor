@@ -6,57 +6,15 @@ use Contao\BackendTemplate;
 use Contao\CalendarEventsModel;
 use Contao\CalendarModel;
 use Contao\Config;
+use Contao\CoreBundle\Routing\ScopeMatcher;
+use Contao\Input;
 use Contao\StringUtil;
 use Contao\ModuleEventlist;
 use Contao\PageModel;
-use Contao\CoreBundle\Routing\ScopeMatcher;
-use Contao\System;
-use Symfony\Component\HttpFoundation\RequestStack;
+use Contao\System;use Psr\Log\LoggerInterface;
 
 class ModuleHiddenEventlist extends ModuleEventlist
 {
-    private ScopeMatcher $scopeMatcher; // Dependency Injection für ScopeMatcher
-    private RequestStack $requestStack; // Dependency Injection für RequestStack
-
-    protected function initializeServices(): void
-    {
-        $container = System::getContainer();
-        $this->scopeMatcher = $container->get('contao.routing.scope_matcher');
-        $this->requestStack = $container->get('request_stack');
-    }
-    /**
-     * Check if the current request is a backend request
-     */
-    public function isBackend(): bool
-    {
-        // Fallback: Initialisiere RequestStack, falls es nicht gesetzt ist
-        if (!isset($this->requestStack)) {
-            $this->requestStack = System::getContainer()->get('request_stack');
-        }
-
-        $currentRequest = $this->requestStack->getCurrentRequest();
-
-        if (null === $currentRequest) {
-            return false; // Keine aktuelle Anfrage
-        }
-
-        return $this->scopeMatcher->isBackendRequest($currentRequest);
-    }
-
-    /**
-     * Check if the current request is a frontend request
-     */
-    public function isFrontend(): bool
-    {
-        $currentRequest = $this->requestStack->getCurrentRequest();
-
-        // Sicherstellen, dass die aktuelle Anfrage existiert
-        if (null === $currentRequest) {
-            return false; // Annahme: Kein Request => kein Frontend
-        }
-
-        return $this->scopeMatcher->isFrontendRequest($currentRequest);
-    }
     /**
      * Current date object
      * @var integer
@@ -69,7 +27,31 @@ class ModuleHiddenEventlist extends ModuleEventlist
      */
     protected $strTemplate = 'mod_eventlist';
 
-    protected static string $table = 'tl_calendar_events';
+    protected static $table = 'tl_calendar_events';
+
+    /**
+     * ScopeMatcher Service
+     * @var ScopeMatcher
+     */
+    private $scopeMatcher;
+
+    public function isBackend(): bool
+    {
+        if ($this->scopeMatcher === null) {
+            $this->scopeMatcher = System::getContainer()->get('contao.routing.scope_matcher');
+        }
+
+        return $this->scopeMatcher->isBackendRequest(System::getContainer()->get('request_stack')->getCurrentRequest());
+    }
+
+    public function isFrontend(): bool
+    {
+        if ($this->scopeMatcher === null) {
+            $this->scopeMatcher = System::getContainer()->get('contao.routing.scope_matcher');
+        }
+
+        return $this->scopeMatcher->isFrontendRequest(System::getContainer()->get('request_stack')->getCurrentRequest());
+    }
 
 
     public static function findCurrentUnPublishedByPid(int $pid, int $start, int $end, array $options = [])
@@ -87,9 +69,6 @@ class ModuleHiddenEventlist extends ModuleEventlist
         return CalendarEventsModel::findBy($arrColumns, $pid, $options);
     }
 
-    /**
-     * @throws \Exception
-     */
     protected function getAllEvents($arrCalendars, $intStart, $intEnd, $blnFeatured = null)
     {
         if (!is_array($arrCalendars)) {
@@ -144,7 +123,7 @@ class ModuleHiddenEventlist extends ModuleEventlist
                             continue;
                         }
 
-                        $this->addEvent($objEvents, $objEvents->startTime, $objEvents->endTime, $strUrl, $intStart, $intEnd);
+                        $this->addEvent($objEvents, $objEvents->startTime, $objEvents->endTime, $strUrl, $intStart, $intEnd, $id);
                     }
                 }
             }
@@ -171,9 +150,9 @@ class ModuleHiddenEventlist extends ModuleEventlist
      * Display a wildcard in the back end
      * @return string
      */
-    public function generate() : string
+    public function generate()
     {
-        if ($this->isBackend()) {
+        if ($this->isBackend() ) {
             $objTemplate = new BackendTemplate('be_wildcard');
 
             $objTemplate->wildcard = '### UNPULISHED EVENT LIST ###';
@@ -185,22 +164,26 @@ class ModuleHiddenEventlist extends ModuleEventlist
             return $objTemplate->parse();
         }
 
-        $this->cal_calendar = $this->sortOutProtected(StringUtil::deserialize($this->cal_calendar, true));
+        $this->cal_calendar = $this->sortOutProtected($this->cal_calendar);
+        $this->cal_calendar = unserialize($this->cal_calendar);
 
         // Return if there are no calendars
         if (!is_array($this->cal_calendar) || count($this->cal_calendar) < 1) {
             return '';
         }
 
-        return parent::generate();
+        //return parent::generate();
+        $result = parent::generate();
+        return $result;
     }
-
 
     /**
      * Generate module
      */
-    protected function compile() : void
+    protected function compile()
     {
         parent::compile();
     }
 }
+
+?>

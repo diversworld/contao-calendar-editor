@@ -13,6 +13,13 @@ services:
       calls:
         - [ setContainer, [ '@service_container' ] ]
 
+  caledit.service.auth:
+    class: Diversworld\CalendarEditorBundle\Services\CheckAuthService
+    arguments: []
+    autowire: true
+    autoconfigure: true
+    public: true
+
   Diversworld\CalendarEditorBundle\:
     resource: ../src/
     exclude: ../src/{DependencyInjection,Model}
@@ -31,13 +38,8 @@ services:
 
   Diversworld\CalendarEditorBundle\Hooks\ListAllEventsHook:
     arguments:
-      $checkAuthService: '@Diversworld\CalendarEditorBundle\Service\CheckAuthService'
+      $checkAuthService: '@Diversworld\CalendarEditorBundle\Services\CheckAuthService'
       $user: '@security.token_storage'
-
-  Diversworld\CalendarEditorBundle\Services\CheckAuthService:
-    autowire: true
-    autoconfigure: true
-    public: true
 
   monolog.logger.contao.general:
     class: Monolog\Logger
