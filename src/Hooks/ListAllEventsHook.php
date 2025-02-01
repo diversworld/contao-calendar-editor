@@ -8,10 +8,12 @@ use Contao\System;
 use Diversworld\CalendarEditorBundle\Models\CalendarModelEdit;
 use Diversworld\CalendarEditorBundle\Services\CheckAuthService;
 use Contao\Frontend;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 class ListAllEventsHook extends Frontend
 {
+    private LoggerInterface $logger;
     protected string $strTemplate = '';
 
     private CheckAuthService $checkAuthService;
@@ -36,6 +38,8 @@ class ListAllEventsHook extends Frontend
      */
     public function updateAllEvents(array $events, array $arrCalendars): array
     {
+        $this->logger = System::getContainer()->get('monolog.logger.contao.general');
+
         if (empty($arrCalendars)) {
             return $events;
         }
@@ -61,8 +65,21 @@ class ListAllEventsHook extends Frontend
                 $page = $this->Database->prepare("SELECT * FROM tl_page WHERE id=(SELECT caledit_jumpTo FROM tl_calendar WHERE id=?)")
                     ->limit(1)
                     ->execute($calendarModel->id);
+
                 if ($page->numRows === 1) {
-                    $jumpPages[$currentPid] = $this->generateFrontendUrl($page->row(), '');
+                    $pageData = (object) $page->row(); // Die Seite holen, die im Kalender hinterlegt ist.
+
+                    // Prüfen, ob ein Alias für die Seite existiert:
+                    if (!empty($pageData->alias)) {
+                        $baseUrl = '/' . $pageData->alias; // Alias-basierte URL
+                    } else {
+                        // Fallback: Generiere die URL mit der Seiten-ID (falls kein Alias vorhanden)
+                        $baseUrl = '/index.php?id=' . $pageData->id;
+                    }
+
+                    // Parameter anhängen, z. B. für den Editor-Link
+                    $jumpPages[$currentPid] = $baseUrl . '?edit=' . $pageData->id; // $eventId ist die Event-ID
+
                 }
             } else {
                 // No editing allowed
@@ -71,6 +88,7 @@ class ListAllEventsHook extends Frontend
             }
         }
 
+        $this->logger->info('$event: '.\print_r($events,true) .' - ', ['module' => 'ModuleCalendar']);
         // Process events and add edit links where appropriate
         foreach ($events as &$date) {
             foreach ($date as &$timestamp) {

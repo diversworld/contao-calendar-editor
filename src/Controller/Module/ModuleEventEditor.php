@@ -253,11 +253,14 @@ class ModuleEventEditor extends Events
     public function checkUserEditRights($user, $eventID, $currentObjectData): bool
     {
         $this->initializeServices();
+        $this->initializeLogger();
 
         // if no event is specified: ok, FE user can add new events :D
         if (!$eventID) {
             return true;
         }
+
+        $this->logger->info('currentObjectData: '. print_r($currentObjectData, true));
 
         $objCalendar = $this->getCalendarObjectFromPID($currentObjectData->pid);
 
@@ -1114,6 +1117,7 @@ class ModuleEventEditor extends Events
         $this->Template->editRef = str_replace('?delete=', '?edit=', $currentUrl);
         $this->Template->editLabel = $GLOBALS['TL_LANG']['MSC']['caledit_editLabel'];
         $this->Template->editTitle = $GLOBALS['TL_LANG']['MSC']['caledit_editTitle'];
+        $this->logger->info('EventEditor editRef: ' . $this->Template->editRef);
 
         if ($this->caledit_allowClone) {
             $this->Template->cloneRef = str_replace('?delete=', '?clone=', $currentUrl);
@@ -1528,7 +1532,7 @@ class ModuleEventEditor extends Events
      */
     protected function compile() : void
     {
-
+        $this->initializeLogger();
         $this->initializeServices();
         // Add TinyMCE-Stuff to header
         $this->addTinyMCE($this->caledit_tinMCEtemplate);
@@ -1567,7 +1571,9 @@ class ModuleEventEditor extends Events
             $this->errorString = $GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed'];
         } else {
             if (!empty($editID)) {
+                $this->logger->info('editid '. $editID);
                 $currentEventObject = CalendarEventsModelEdit::findByIdOrAlias($editID);
+                $this->logger->info('currentEventObject: ' . print_r($currentEventObject, true));
 
                 // Benutzerrechte prüfen, wenn ein Event vorhanden ist
                 $AuthorizedUser = $this->checkUserEditRights($this->User, $editID, $currentEventObject);

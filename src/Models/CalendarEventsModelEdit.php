@@ -9,6 +9,7 @@ use Psr\Log\LoggerInterface;
 
 class CalendarEventsModelEdit extends CalendarEventsModel
 {
+
     public static function findByIdOrAlias($val, array $opt = []): ?CalendarEventsModel
     {
         $t = static::$strTable;
@@ -16,13 +17,10 @@ class CalendarEventsModelEdit extends CalendarEventsModel
 
         if (!static::isPreviewMode($opt)) {
             $time = Date::floorToMinute();
-            $arrColumns[] = "$t.published=1 AND ($t.start='' OR $t.start<=$time) AND ($t.stop='' OR $t.stop>$time)";
+            $arrColumns[] = "($t.start='' OR $t.start<='$time') AND ($t.stop='' OR $t.stop>'" . ($time + 60) . "')";
         }
 
-        $eventObject = static::findOneBy($arrColumns, $val, $opt);
-
-        //return static::findOneBy($arrColumns, $ids, $options);
-        return $eventObject;
+        return static::findOneBy($arrColumns, $val, $opt);
     }
 
 }

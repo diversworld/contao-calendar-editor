@@ -7,14 +7,15 @@ use Contao\CalendarEventsModel;
 use Contao\CalendarModel;
 use Contao\Config;
 use Contao\CoreBundle\Routing\ScopeMatcher;
-use Contao\Input;
 use Contao\StringUtil;
 use Contao\ModuleEventlist;
 use Contao\PageModel;
-use Contao\System;use Psr\Log\LoggerInterface;
+use Contao\System;
+use Psr\Log\LoggerInterface;
 
 class ModuleHiddenEventlist extends ModuleEventlist
 {
+    private LoggerInterface $logger;
     /**
      * Current date object
      * @var integer
@@ -71,6 +72,8 @@ class ModuleHiddenEventlist extends ModuleEventlist
 
     protected function getAllEvents($arrCalendars, $intStart, $intEnd, $blnFeatured = null)
     {
+        $this->logger = System::getContainer()->get('monolog.logger.contao.general');
+
         if (!is_array($arrCalendars)) {
             return array();
         }
@@ -84,7 +87,32 @@ class ModuleHiddenEventlist extends ModuleEventlist
             // Get the current "jumpTo" page
             if ($objCalendar !== null && $objCalendar->jumpTo && ($objTarget = $objCalendar->getRelated('jumpTo')) !== null) {
                 /** @var PageModel $objTarget */
-                $strUrl = $objTarget->getFrontendUrl((Config::get('useAutoItem') && !Config::get('disableAlias')) ? '/%s' : '/events/%s');
+                // Prüfen, ob ein Editor-Ziel (caledit_jumpTo) definiert ist
+                if ($objCalendar !== null && $objCalendar->caledit_jumpTo) {
+                    $objEditorPage = $this->Database
+                        ->prepare("SELECT * FROM tl_page WHERE id=?")
+                        ->limit(1)
+                        ->execute($objCalendar->caledit_jumpTo);
+
+                    if ($objEditorPage->numRows > 0) {
+                        $objEditorPage = (object) $objEditorPage->row(); // Editor-Seite laden
+                        $strUrl = '/' . $objEditorPage->alias; // Alias der Editor-Seite nutzen
+                    } else {
+                        $this->logger->error('ERROR: Keine gültige Editor-Seite (caledit_jumpTo) konfiguriert.');
+                    }
+                } else {
+                    // Fallback: Alte Mechanik (jumpTo) verwenden
+                    if ($objCalendar !== null && $objCalendar->jumpTo && ($objTarget = $objCalendar->getRelated('jumpTo')) !== null) {
+                        $strUrl = $objTarget->getFrontendUrl((Config::get('useAutoItem') && !Config::get('disableAlias')) ? '/%s' : '/events/%s');
+                    } else {
+                        $strUrl = ''; // Sicherstellen, dass $strUrl initialisiert ist
+                        $this->logger->error('ERROR: Weder eine Editor-Seite noch eine Standard-Zielseite definiert.');
+                    }
+                }
+
+// Debug-Log-Ausgabe zur Überprüfung
+                $this->logger->info('INFO: Generierte URL für Editor oder Eventleser: ' . $strUrl, ['module' => $this->name]);
+
             }
             $objEvents = $this->findCurrentUnPublishedByPid($id, $intStart, $intEnd);
 
@@ -92,8 +120,17 @@ class ModuleHiddenEventlist extends ModuleEventlist
                 continue;
             }
 
-
             while ($objEvents->next()) {
+                $editLabel = $GLOBALS['TL_LANG']['MSC']['caledit_editLabel'] ?? 'Bearbeiten';
+                $editTitle = $GLOBALS['TL_LANG']['MSC']['caledit_editTitle'] ?? 'Event bearbeiten';
+
+                $this->logger->info('INFO: objEvents-id ' . $objEvents->id .' - ', ['module' => $this->name]);
+                // Bearbeitungslinks generieren und hinzufügen
+                $editUrl = $strUrl . '?edit=' . $objEvents->id;
+                $objEvents->editRef = $editUrl; // Variable hinzufügen
+                $objEvents->editLabel = $editLabel;
+                $objEvents->editTitle = $editTitle;
+
                 $this->addEvent($objEvents, $objEvents->startTime, $objEvents->endTime, $strUrl, $intStart, $intEnd, $id);
 
                 // Recurring events

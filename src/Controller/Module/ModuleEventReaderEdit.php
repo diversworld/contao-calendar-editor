@@ -82,11 +82,13 @@ class ModuleEventReaderEdit extends Events
 
         // FE user is logged in
         $token = System::getContainer()->get('security.token_storage')->getToken();
-
-        // Prüfen, ob ein Token gesetzt ist und ein Benutzer vorhanden ist
+        // FrontendUser laden
         if ($token !== null && $token->getUser() instanceof FrontendUser) {
-            return;
+            $this->User = $token->getUser();
+        } else {
+            $this->User = null; // Kein Benutzer eingeloggt
         }
+
         $time = time();
 
         $hasBackendUser = System::getContainer()->get('contao.security.token_checker')->hasBackendUser();
@@ -131,8 +133,6 @@ class ModuleEventReaderEdit extends Events
                     );
         }
 
-        $this->logger->info('INFO: objEvent '.$objEvent->numRows.' - - ' . print_r($objEvent,true) .' - ', ['module' => $this->name]);
-
         if ($objEvent->numRows < 1) {
             $this->Template->error = $GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed'];
             $this->Template->error_class = 'error';
@@ -142,13 +142,9 @@ class ModuleEventReaderEdit extends Events
         // get Calender with PID
         $calendarModel = CalendarModelEdit::findByPk($objEvent->pid);
 
-        $this->logger->info('INFO: calendarModel ' . print_r($calendarModel,true) .' - ', ['module' => $this->name]);
-
         if ($calendarModel === null) {
             return;
         }
-
-        $this->logger->info('INFO: allowEdit:'.$calendarModel->AllowEdit.' - ', ['module' => $this->name]);
 
         if ($calendarModel->AllowEdit) {
             // Calendar allows editing
@@ -161,25 +157,12 @@ class ModuleEventReaderEdit extends Events
             } else {
                 $frontendUser = null; // Kein Benutzer vorhanden
             }
-            $this->logger->info('INFO: frontendUser ' . print_r($frontendUser,true) .' - ', ['module' => $this->name]);
-            $this->logger->info('INFO: calendarModel ' . print_r($calendarModel,true) .' - ', ['module' => $this->name]);
 
-            // Rufe die Methode nur auf, wenn ein Frontend-User existiert
-            if ($frontendUser !== null) {
-                $isAuthorized = $checkAuthService->isUserAuthorized($calendar, $frontendUser);
-            } else {
-                // Kein Benutzer vorhanden, also nicht autorisiert
-                $isAuthorized = false;
-            }
-
+            $isUserAuthorized = $checkAuthService->isUserAuthorized($calendarModel, $this->User);
             $isUserAdmin = $checkAuthService->isUserAdmin($calendarModel, $this->User);
 
             $authorizedElapsedEvents = $checkAuthService->isUserAuthorizedElapsedEvents($calendarModel, $this->User);
             $areEditLinksAllowed = $checkAuthService->areEditLinksAllowed($calendarModel, $objEvent->row(), $this->User->id, $isUserAdmin, $isUserAuthorized);
-            $this->logger->info('INFO: isUserAdmin:'.$isUserAdmin.' - ', ['module' => $this->name]);
-            $this->logger->info('INFO: isUserAuthorized:'.$isUserAuthorized.' - ', ['module' => $this->name]);
-            $this->logger->info('INFO: authorizedElapsedEvents:'.$authorizedElapsedEvents.' - ', ['module' => $this->name]);
-            $this->logger->info('INFO: areEditLinksAllowed:'.$areEditLinksAllowed.' - ', ['module' => $this->name]);
 
             $strUrl = '';
             if ($areEditLinksAllowed) {
@@ -188,11 +171,9 @@ class ModuleEventReaderEdit extends Events
                     ->limit(1)
                     ->execute($calendarModel->id);
                 if ($objPage->numRows) {
-                    $strUrl = $this->generateFrontendUrl($objPage->row(), '');
+                    $pageData = (object) $objPage->row();
+                    $strUrl = $this->generateEventUrl($pageData, '');
                 }
-
-                $this->logger->info('INFO: strUrl ' . $strUrl .' - ', ['module' => $this->name]);
-                $this->logger->info('INFO: editRef ' . $strUrl.'?edit='.$objEvent->id .' - ', ['module' => $this->name]);
 
                 $this->Template->editRef = $strUrl.'?edit='.$objEvent->id;
                 $this->Template->editLabel = $GLOBALS['TL_LANG']['MSC']['caledit_editLabel'];
