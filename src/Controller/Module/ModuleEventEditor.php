@@ -6,6 +6,7 @@ use Contao\BackendTemplate;
 use Contao\CalendarEventsModel;
 use Contao\CalendarModel;
 use Contao\ContentModel;
+use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Email;
 use Contao\FormCaptcha;
@@ -69,6 +70,7 @@ class ModuleEventEditor extends Events
         $this->tokenChecker = $container->get('contao.security.token_checker');
         $this->connection = $container->get('doctrine')->getConnection();
     }
+
     /**
      * generate Module
      */
