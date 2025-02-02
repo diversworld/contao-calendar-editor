@@ -54,7 +54,6 @@ class ModuleHiddenEventlist extends ModuleEventlist
         return $this->scopeMatcher->isFrontendRequest(System::getContainer()->get('request_stack')->getCurrentRequest());
     }
 
-
     public static function findCurrentUnPublishedByPid(int $pid, int $start, int $end, array $options = [])
     {
         $t = static::$table;
@@ -109,11 +108,8 @@ class ModuleHiddenEventlist extends ModuleEventlist
                         $this->logger->error('ERROR: Weder eine Editor-Seite noch eine Standard-Zielseite definiert.');
                     }
                 }
-
-// Debug-Log-Ausgabe zur Überprüfung
-                $this->logger->info('INFO: Generierte URL für Editor oder Eventleser: ' . $strUrl, ['module' => $this->name]);
-
             }
+
             $objEvents = $this->findCurrentUnPublishedByPid($id, $intStart, $intEnd);
 
             if ($objEvents === null) {

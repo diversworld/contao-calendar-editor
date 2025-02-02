@@ -44,8 +44,6 @@ class ModuleEventReaderEdit extends Events
 
     public function generate() : string
     {
-        $this->logger = System::getContainer()->get('monolog.logger.contao.general');
-
         if ($this->isBackend()) {
             $objTemplate = new BackendTemplate('be_wildcard');
 
@@ -75,8 +73,6 @@ class ModuleEventReaderEdit extends Events
 
     protected function compile(): void
     {
-        $this->logger = System::getContainer()->get('monolog.logger.contao.general');
-
         $this->Template = new FrontendTemplate($this->strTemplate);
         $this->Template->editRef = '';
 
@@ -172,9 +168,11 @@ class ModuleEventReaderEdit extends Events
                     ->execute($calendarModel->id);
                 if ($objPage->numRows) {
                     $pageData = (object) $objPage->row();
-                    $strUrl = $this->generateEventUrl($pageData, '');
+                    //$strUrl = $this->generateEventUrl($pageData, '');
+                    $strUrl = '/' . $pageData->alias;
                 }
 
+                $this->logger->info('INFO: strUrl: ' . $strUrl, ['module' => $this->name]);
                 $this->Template->editRef = $strUrl.'?edit='.$objEvent->id;
                 $this->Template->editLabel = $GLOBALS['TL_LANG']['MSC']['caledit_editLabel'];
                 $this->Template->editTitle = $GLOBALS['TL_LANG']['MSC']['caledit_editTitle'];
