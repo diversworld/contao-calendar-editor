@@ -20,8 +20,6 @@ class ModuleCalendarEdit extends ModuleCalendar
 	protected bool $allowElapsedEvents;
 	protected bool $allowEditEvents;
 
-
-
     private ScopeMatcher $scopeMatcher; // Dependency Injection für ScopeMatcher
     private RequestStack $requestStack; // Dependency Injection für RequestStack
     private ?CheckAuthService $checkAuthService;
