@@ -2,18 +2,13 @@
 
 namespace Diversworld\CalendarEditorBundle\Hooks;
 
-use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\FrontendUser;
-use Contao\System;
 use Diversworld\CalendarEditorBundle\Models\CalendarModelEdit;
 use Diversworld\CalendarEditorBundle\Services\CheckAuthService;
 use Contao\Frontend;
-use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
 
 class ListAllEventsHook extends Frontend
 {
-    private LoggerInterface $logger;
     protected string $strTemplate = '';
 
     private CheckAuthService $checkAuthService;
@@ -38,8 +33,6 @@ class ListAllEventsHook extends Frontend
      */
     public function updateAllEvents(array $events, array $arrCalendars): array
     {
-        $this->logger = System::getContainer()->get('monolog.logger.contao.general');
-
         if (empty($arrCalendars)) {
             return $events;
         }

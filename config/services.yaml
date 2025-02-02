@@ -15,7 +15,6 @@ services:
 
   caledit.service.auth:
     class: Diversworld\CalendarEditorBundle\Services\CheckAuthService
-    arguments: []
     autowire: true
     autoconfigure: true
     public: true
@@ -23,10 +22,6 @@ services:
   Diversworld\CalendarEditorBundle\:
     resource: ../src/
     exclude: ../src/{DependencyInjection,Model}
-
-  Diversworld\CalendarEditorBundle\Controller\Module\ModuleCalendarEdit:
-    calls:
-      - [ setCheckAuthService, [ '@Diversworld\CalendarEditorBundle\Services\CheckAuthService' ] ]
 
   Diversworld\CalendarEditorBundle\Controller\Module\ModuleEventEditor:
     arguments:
@@ -38,7 +33,7 @@ services:
 
   Diversworld\CalendarEditorBundle\Hooks\ListAllEventsHook:
     arguments:
-      $checkAuthService: '@Diversworld\CalendarEditorBundle\Services\CheckAuthService'
+      $checkAuthService: '@caledit.service.auth'
       $user: '@security.token_storage'
 
   monolog.logger.contao.general:

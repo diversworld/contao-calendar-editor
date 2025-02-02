@@ -19,6 +19,9 @@ class ModuleCalendarEdit extends ModuleCalendar
 	// variable which indicates whether events can be added or not (on elapsed days)
 	protected bool $allowElapsedEvents;
 	protected bool $allowEditEvents;
+
+
+
     private ScopeMatcher $scopeMatcher; // Dependency Injection für ScopeMatcher
     private RequestStack $requestStack; // Dependency Injection für RequestStack
     private ?CheckAuthService $checkAuthService;
