@@ -10,12 +10,9 @@ use Contao\System;
 use Diversworld\CalendarEditorBundle\Models\CalendarModelEdit;
 use Diversworld\CalendarEditorBundle\Services\CheckAuthService;
 use Contao\FrontendTemplate;
-use Psr\Log\LoggerInterface;
 use Contao\FrontendUser;
 class ModuleEventReaderEdit extends Events
 {
-    private LoggerInterface $logger;
-
     /**
      * Template
      * @var string
@@ -172,7 +169,6 @@ class ModuleEventReaderEdit extends Events
                     $strUrl = '/' . $pageData->alias;
                 }
 
-                $this->logger->info('INFO: strUrl: ' . $strUrl, ['module' => $this->name]);
                 $this->Template->editRef = $strUrl.'?edit='.$objEvent->id;
                 $this->Template->editLabel = $GLOBALS['TL_LANG']['MSC']['caledit_editLabel'];
                 $this->Template->editTitle = $GLOBALS['TL_LANG']['MSC']['caledit_editTitle'];
