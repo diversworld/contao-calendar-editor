@@ -51,17 +51,15 @@ class ModuleEventEditor extends Events
     private ?CheckAuthService $checkAuthService = null;
     private Connection $connection;
     private LoggerInterface $logger;
-
     protected function initializeLogger(): void
     {
         $this->logger = System::getContainer()->get('monolog.logger.contao.general');
     }
-
     protected function initializeServices(): void
     {
         $container = System::getContainer();
 
-        $this->checkAuthService = $container->get('Diversworld\CalendarEditorBundle\Services\CheckAuthService');
+        $this->checkAuthService = $container->get('caledit.service.auth');
         $this->scopeMatcher = $container->get('contao.routing.scope_matcher');
         $this->requestStack = $container->get('request_stack');
         // Hole die Doctrine Connection

@@ -28,9 +28,6 @@ class ModuleCalendarEdit extends ModuleCalendar
     {
         $container = System::getContainer();
         $this->checkAuthService = $container->get('caledit.service.auth');
-
-
-
         $this->scopeMatcher = $container->get('contao.routing.scope_matcher');
         $this->requestStack = $container->get('request_stack');
     }
