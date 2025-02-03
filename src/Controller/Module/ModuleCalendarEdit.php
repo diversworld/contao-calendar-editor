@@ -21,11 +21,14 @@ class ModuleCalendarEdit extends ModuleCalendar
 	protected bool $allowEditEvents;
     private ScopeMatcher $scopeMatcher; // Dependency Injection für ScopeMatcher
     private RequestStack $requestStack; // Dependency Injection für RequestStack
-    private ?CheckAuthService $checkAuthService;
-    protected function initializeServices(): void
+    private ?CheckAuthService $checkAuthService = null;
+
+    protected function initializeServices( ): void
     {
         $container = System::getContainer();
-        $this->checkAuthService = $container->get('Diversworld\CalendarEditorBundle\Services\CheckAuthService');
+        $this->checkAuthService = $container->get('caledit.service.auth');
+
+
 
         $this->scopeMatcher = $container->get('contao.routing.scope_matcher');
         $this->requestStack = $container->get('request_stack');
