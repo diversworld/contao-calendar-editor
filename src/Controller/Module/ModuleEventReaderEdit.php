@@ -146,7 +146,7 @@ class ModuleEventReaderEdit extends Events
             // Calendar allows editing
             // check user rights
             /** @var CheckAuthService $checkAuthService */
-            $checkAuthService = System::getContainer()->get('Diversworld\CalendarEditorBundle\Services\CheckAuthService');
+            $checkAuthService = System::getContainer()->get('caledit.service.auth');
 
             if (System::getContainer()->get('contao.security.token_checker')->hasFrontendUser()) {
                 $frontendUser = FrontendUser::getInstance(); // Hole den aktuellen User
