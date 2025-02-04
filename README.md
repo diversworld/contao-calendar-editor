@@ -1,3 +1,8 @@
+<p align="center">
+<img alt="GitHub Release" src="https://img.shields.io/github/v/release/diversworld/contao-calendar-editor">
+<img alt="GitHub commits since tagged version (branch)" src="https://img.shields.io/github/commits-since/diversworld/contao-calendar-editor/5.0.12/master"> <img alt="Packagist Downloads" src="https://img.shields.io/packagist/dt/diversworld/contao-calendar-editor">
+</p>
+
 > Updated version for contao 4.13 based on https://github.com/wusch/Contao-CalendarEditor
 
 # Contao-CalendarEditor
