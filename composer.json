@@ -45,5 +45,5 @@
     "unit-tests": "@php tools/phpunit/vendor/bin/phpunit -c tools/phpunit/phpunit.xml.dist",
     "phpstan": "@php tools/phpstan/vendor/bin/phpstan analyse src tests"
   },
-  "version": "5.0.12"
+  "version": "5.1.0"
 }
