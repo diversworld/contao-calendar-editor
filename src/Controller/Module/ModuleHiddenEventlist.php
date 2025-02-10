@@ -120,7 +120,6 @@ class ModuleHiddenEventlist extends ModuleEventlist
                 $editLabel = $GLOBALS['TL_LANG']['MSC']['caledit_editLabel'] ?? 'Bearbeiten';
                 $editTitle = $GLOBALS['TL_LANG']['MSC']['caledit_editTitle'] ?? 'Event bearbeiten';
 
-                $this->logger->info('INFO: objEvents-id ' . $objEvents->id .' - ', ['module' => $this->name]);
                 // Bearbeitungslinks generieren und hinzufügen
                 $editUrl = $strUrl . '?edit=' . $objEvents->id;
                 $objEvents->editRef = $editUrl; // Variable hinzufügen

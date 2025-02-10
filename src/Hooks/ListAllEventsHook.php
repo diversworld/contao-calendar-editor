@@ -3,9 +3,11 @@
 namespace Diversworld\CalendarEditorBundle\Hooks;
 
 use Contao\FrontendUser;
+use Contao\System;
 use Diversworld\CalendarEditorBundle\Models\CalendarModelEdit;
 use Diversworld\CalendarEditorBundle\Services\CheckAuthService;
 use Contao\Frontend;
+use Psr\Log\LoggerInterface;
 
 class ListAllEventsHook extends Frontend
 {
@@ -33,6 +35,8 @@ class ListAllEventsHook extends Frontend
      */
     public function updateAllEvents(array $events, array $arrCalendars): array
     {
+        $this->logger = System::getContainer()->get('monolog.logger.contao.general');
+
         if (empty($arrCalendars)) {
             return $events;
         }
@@ -87,6 +91,8 @@ class ListAllEventsHook extends Frontend
             foreach ($date as &$timestamp) {
                 foreach ($timestamp as &$event) {
                     $pid = $event['pid'];
+                    $this->logger->info('$event: '.\print_r($event,true) .' - ', ['module' => 'ModuleCalendar']);
+                    $this->logger->info('jumpPages: '. $jumpPages[$pid]);
                     if (
                         $this->user->id !== null &&
                         $calendarObjects[$pid]->AllowEdit === '1' &&
