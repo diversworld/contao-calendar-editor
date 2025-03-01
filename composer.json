@@ -44,6 +44,5 @@
     "cs-fixer": "@php tools/ecs/vendor/bin/ecs check config/ contao/ src/ tests/ --config tools/ecs/config.php --fix --ansi",
     "unit-tests": "@php tools/phpunit/vendor/bin/phpunit -c tools/phpunit/phpunit.xml.dist",
     "phpstan": "@php tools/phpstan/vendor/bin/phpstan analyse src tests"
-  },
-  "version": "5.1.0"
+  }
 }
