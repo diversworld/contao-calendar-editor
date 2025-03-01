@@ -51,10 +51,12 @@ class ModuleEventEditor extends Events
     private ?CheckAuthService $checkAuthService = null;
     private Connection $connection;
     private LoggerInterface $logger;
+
     protected function initializeLogger(): void
     {
         $this->logger = System::getContainer()->get('monolog.logger.contao.general');
     }
+
     protected function initializeServices(): void
     {
         $container = System::getContainer();
@@ -215,6 +217,7 @@ class ModuleEventEditor extends Events
             return false;
         }
     }
+
     /**
      * check, whether the user is allowed to edit the specified Event
      * This is called when the user has general access to at least one calendar
@@ -579,6 +582,7 @@ class ModuleEventEditor extends Events
     protected function handleEdit($editID, $currentEventObject): void
     {
         $this->initializeServices();
+        $this->initializeLogger();
 
         $this->strTemplate = $this->caledit_template;
 
@@ -750,6 +754,7 @@ class ModuleEventEditor extends Events
                     //$this->addDatePicker($fields['endDate']);
                     $fields['startDate'] = [
                         'name' => 'startDate',
+                        'id'    => 'startDate',
                         'label' => $GLOBALS['TL_LANG']['MSC']['caledit_startdate'],
                         'inputType' => 'text', // or: 'calendarfield' (see below),
                         'value' => $newEventData['startDate'],
@@ -763,6 +768,7 @@ class ModuleEventEditor extends Events
 
                     $fields['endDate'] = [
                         'name' => 'endDate',
+                        'id'    => 'endDate',
                         'label' => $GLOBALS['TL_LANG']['MSC']['caledit_enddate'],
                         'inputType' => 'text',
                         'value' => $newEventData['endDate'] ?? null,
@@ -777,6 +783,7 @@ class ModuleEventEditor extends Events
                 } else {
                     $fields['startDate'] = [
                         'name' => 'startDate',
+                        'id'    => 'startDate',
                         'label' => $GLOBALS['TL_LANG']['MSC']['caledit_startdate'],
                         'inputType' => 'text', // or: 'calendarfield' (see below),
                         'value' => $newEventData['startDate'],
@@ -789,6 +796,7 @@ class ModuleEventEditor extends Events
 
                     $fields['endDate'] = [
                         'name' => 'endDate',
+                        'id'    => 'endDate',
                         'label' => $GLOBALS['TL_LANG']['MSC']['caledit_enddate'],
                         'inputType' => 'text',
                         'value' => $newEventData['endDate'] ?? null,
@@ -803,6 +811,7 @@ class ModuleEventEditor extends Events
 
                 $fields['startTime'] = [
                     'name' => 'startTime',
+                    'id'    => 'startTime',
                     'label' => $GLOBALS['TL_LANG']['MSC']['caledit_starttime'],
                     'inputType' => 'text',
                     'value' => $newEventData['startTime'] ?? '', // Formatiert zu "HH:mm", z. B. "13:45"
@@ -816,6 +825,7 @@ class ModuleEventEditor extends Events
 
                 $fields['endTime'] = [
                     'name' => 'endTime',
+                    'id'    => 'endTime',
                     'label' => $GLOBALS['TL_LANG']['MSC']['caledit_endtime'],
                     'inputType' => 'text',
                     'value' => $newEventData['endTime'] ?? '',
@@ -829,6 +839,7 @@ class ModuleEventEditor extends Events
 
                 $fields['title'] = [
                     'name' => 'title',
+                    'id'    => 'title',
                     'label' => $GLOBALS['TL_LANG']['MSC']['caledit_title'],
                     'inputType' => 'text',
                     'value' => $newEventData['title'] ?? '',
@@ -841,6 +852,7 @@ class ModuleEventEditor extends Events
 
                 $fields['location'] = [
                     'name' => 'location',
+                    'id'    => 'location',
                     'label' => $GLOBALS['TL_LANG']['MSC']['caledit_location'],
                     'inputType' => 'text',
                     'value' => $newEventData['location'] ?? '',
@@ -853,6 +865,7 @@ class ModuleEventEditor extends Events
 
                 $fields['teaser'] = [
                     'name' => 'teaser',
+                    'id'    => 'teaser',
                     'label' => $GLOBALS['TL_LANG']['MSC']['caledit_teaser'],
                     'inputType' => 'textarea',
                     'value' => $newEventData['teaser'] ?? '',
@@ -865,6 +878,7 @@ class ModuleEventEditor extends Events
 
                 $fields['details'] = [
                     'name' => 'details',
+                    'id'    => 'details',
                     'label' => $GLOBALS['TL_LANG']['MSC']['caledit_details'],
                     'inputType' => 'textarea',
                     'value' => $NewContentData['text'] ?? '',
@@ -885,6 +899,7 @@ class ModuleEventEditor extends Events
                     }
                     $fields['pid'] = [
                         'name' => 'pid',
+                        'id'    => 'pid',
                         'label' => $GLOBALS['TL_LANG']['MSC']['caledit_pid'],
                         'inputType' => 'select',
                         'options' => $popt,
@@ -899,40 +914,70 @@ class ModuleEventEditor extends Events
                 $xx = $this->caledit_alternateCSSLabel;
                 $cssLabel = (empty($xx)) ? $GLOBALS['TL_LANG']['MSC']['caledit_css'] : $this->caledit_alternateCSSLabel;
 
+                //Angepasst
                 if ($this->caledit_usePredefinedCss) {
                     $cssValues = StringUtil::deserialize($this->caledit_cssValues);
+
+                    // Sicherstellen, dass cssValues ein array ist
+                    if (!is_array($cssValues) || empty($cssValues)) {
+                        $cssValues = [];
+                    }
 
                     $ref = [];
                     $opt = [];
 
-
+                    // Optionen korrekt formatieren
                     foreach ($cssValues as $cssv) {
-                        $opt[] = $cssv['value'];
-                        $ref[$cssv['value']] = $cssv['label'];
+                        if (isset($cssv['value'], $cssv['label']) && is_string($cssv['value']) && is_string($cssv['label'])) {
+                            $opt[] = [
+                                'value' => $cssv['value'], // Wert der Option
+                                'label' => $cssv['label']  // Beschriftung der Option
+                            ];
+                            $ref[$cssv['value']] = $cssv['label'];
+                        }
                     }
 
+                    // Sicherstellen, dass opt und ref nicht leer sind
+                    if (empty($opt)) {
+                        $opt[] = [
+                            'value' => 'default',
+                            'label' => 'Default Option'
+                        ];
+                        $ref['default'] = 'Default Option';
+                    }
+
+                    // Wert validieren
+                    $selectedValue = $newEventData['cssClass'] ?? '';
+                    if (!in_array($selectedValue, array_column($opt, 'value'), true)) {
+                        $selectedValue = ''; // Standardwert setzen, wenn ungültig
+                    }
+
+                    // Feld zuweisen
                     $fields['cssClass'] = [
-                        'name' => 'cssClass',
-                        'label' => $cssLabel,
-                        'inputType' => 'select',
-                        'options' => $opt,
-                        'value' => $newEventData['cssClass'] ?? '',
-                        'reference' => $ref,
-                        'eval' => [
-                            'mandatory' => $mandCss,
+                        'name'        => 'cssClass',
+                        'id'          => 'cssClass',
+                        'label'       => $cssLabel,
+                        'inputType'   => 'select',
+                        'options'     => $opt,
+                        'value'       => $selectedValue,
+                        'reference'   => $ref,
+                        'eval'        => [
+                            'mandatory'          => $mandCss,
                             'includeBlankOption' => true,
-                            'maxlength' => 128, 'decodeEntities' => true
+                            'maxlength'          => 128,
+                            'decodeEntities'     => true
                         ]
                     ];
                 } else {
                     $fields['cssClass'] = [
-                        'name' => 'cssClass',
-                        'label' => $cssLabel,
+                        'name'      => 'cssClass',
+                        'id'        => 'cssClass',
+                        'label'     => $cssLabel,
                         'inputType' => 'text',
-                        'value' => $newEventData['cssClass'] ?? '',
-                        'eval' => [
-                            'mandatory' => $mandCss,
-                            'maxlength' => 128,
+                        'value'     => $newEventData['cssClass'] ?? '',
+                        'eval'      => [
+                            'mandatory'      => $mandCss,
+                            'maxlength'      => 128,
                             'decodeEntities' => true
                         ]
                     ];
@@ -960,7 +1005,8 @@ class ModuleEventEditor extends Events
                     // create a checkbox "save as copy"
                     $fields['saveAs'] = [
                         'name' => 'saveAs',
-                        'label' => '', // $GLOBALS['TL_LANG']['MSC']['caledit_saveAs']
+                        'label' => $GLOBALS['TL_LANG']['MSC']['caledit_saveAs'],
+                        'id'    => 'saveAs',
                         'inputType' => 'checkbox',
                         'value' => $saveAs,
                         'options' =>  [
@@ -981,7 +1027,8 @@ class ModuleEventEditor extends Events
 
                 // Create jump-to-selection
                 $fields['jumpToSelection'] = [
-                    'name' => 'jumpToSelection',
+                    'name'  => 'jumpToSelection',
+                    'id'    => 'jumpToSelection',
                     'label' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpWhatsNext'],
                     'inputType' => 'select',
                     // arrOptions wird direkt verwendet
@@ -1188,6 +1235,7 @@ class ModuleEventEditor extends Events
             //$this->addDatePicker($fields['endDate']);
             $fields['startDate'] = [
                 'name' => 'startDate',
+                'id'    => 'startDate',
                 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_startdate'],
                 'inputType' => 'text', // or: 'calendarfield' (see below),
                 'value' => $newEventData['startDate'],
@@ -1201,6 +1249,7 @@ class ModuleEventEditor extends Events
 
             $fields['endDate'] = [
                 'name' => 'endDate',
+                'id'    => 'endDate',
                 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_enddate'],
                 'inputType' => 'text',
                 'value' => $newEventData['endDate'] ?? null,
@@ -1215,6 +1264,7 @@ class ModuleEventEditor extends Events
         } else {
             $fields['startDate'] = [
                 'name' => 'startDate',
+                'id'    => 'startDate',
                 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_startdate'],
                 'inputType' => 'text', // or: 'calendarfield' (see below),
                 'value' => $newEventData['startDate'],
@@ -1227,6 +1277,7 @@ class ModuleEventEditor extends Events
 
             $fields['endDate'] = [
                 'name' => 'endDate',
+                'id'    => 'endDate',
                 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_enddate'],
                 'inputType' => 'text',
                 'value' => $newEventData['endDate'] ?? null,
@@ -1241,6 +1292,7 @@ class ModuleEventEditor extends Events
 
         $fields['startTime'] = [
             'name' => 'startTime',
+            'id'    => 'startTime',
             'label' => $GLOBALS['TL_LANG']['MSC']['caledit_starttime'],
             'inputType' => 'text',
             'value' => $newEventData['startTime'] ?? '',
@@ -1254,6 +1306,7 @@ class ModuleEventEditor extends Events
 
         $fields['endTime'] = [
             'name' => 'endTime',
+            'id'    => 'endTime',
             'label' => $GLOBALS['TL_LANG']['MSC']['caledit_endtime'],
             'inputType' => 'text',
             'value' => $newEventData['endTime'] ?? '',
@@ -1267,6 +1320,7 @@ class ModuleEventEditor extends Events
 
         $fields['title'] = [
             'name' => 'title',
+            'id'    => 'title',
             'label' => $GLOBALS['TL_LANG']['MSC']['caledit_title'],
             'inputType' => 'text',
             'value' => $newEventData['title'] ?? '',
@@ -1279,6 +1333,7 @@ class ModuleEventEditor extends Events
 
         $fields['location'] = [
             'name' => 'location',
+            'id'    => 'location',
             'label' => $GLOBALS['TL_LANG']['MSC']['caledit_location'],
             'inputType' => 'text',
             'value' => $newEventData['location'] ?? '',
@@ -1291,6 +1346,7 @@ class ModuleEventEditor extends Events
 
         $fields['teaser'] = [
             'name' => 'teaser',
+            'id'    => 'teaser',
             'label' => $GLOBALS['TL_LANG']['MSC']['caledit_teaser'],
             'inputType' => 'textarea',
             'value' => $newEventData['teaser'] ?? '',
@@ -1303,6 +1359,7 @@ class ModuleEventEditor extends Events
 
         $fields['details'] = [
             'name' => 'details',
+            'id'    => 'details',
             'label' => $GLOBALS['TL_LANG']['MSC']['caledit_details'],
             'inputType' => 'textarea',
             'value' => $NewContentData['text'] ?? '',
@@ -1323,6 +1380,7 @@ class ModuleEventEditor extends Events
             }
             $fields['pid'] = [
                 'name' => 'pid',
+                'id'    => 'pid',
                 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_pid'],
                 'inputType' => 'select',
                 'options' => $popt,
@@ -1340,37 +1398,66 @@ class ModuleEventEditor extends Events
         if ($this->caledit_usePredefinedCss) {
             $cssValues = StringUtil::deserialize($this->caledit_cssValues);
 
+            // Sicherstellen, dass cssValues ein array ist
+            if (!is_array($cssValues) || empty($cssValues)) {
+                $cssValues = [];
+            }
+
             $ref = [];
             $opt = [];
 
-
+            // Optionen korrekt formatieren
             foreach ($cssValues as $cssv) {
-                $opt[] = $cssv['value'];
-                $ref[$cssv['value']] = $cssv['label'];
+                if (isset($cssv['value'], $cssv['label']) && is_string($cssv['value']) && is_string($cssv['label'])) {
+                    $opt[] = [
+                        'value' => $cssv['value'], // Wert der Option
+                        'label' => $cssv['label']  // Beschriftung der Option
+                    ];
+                    $ref[$cssv['value']] = $cssv['label'];
+                }
             }
 
+            // Sicherstellen, dass opt und ref nicht leer sind
+            if (empty($opt)) {
+                $opt[] = [
+                    'value' => 'default',
+                    'label' => 'Default Option'
+                ];
+                $ref['default'] = 'Default Option';
+            }
+
+            // Wert validieren
+            $selectedValue = $newEventData['cssClass'] ?? '';
+            if (!in_array($selectedValue, array_column($opt, 'value'), true)) {
+                $selectedValue = ''; // Standardwert setzen, wenn ungültig
+            }
+
+            // Feld zuweisen
             $fields['cssClass'] = [
-                'name' => 'cssClass',
-                'label' => $cssLabel,
-                'inputType' => 'select',
-                'options' => $opt,
-                'value' => $newEventData['cssClass'] ?? '',
-                'reference' => $ref,
-                'eval' => [
-                    'mandatory' => $mandCss,
+                'name'        => 'cssClass',
+                'id'          => 'cssClass',
+                'label'       => $cssLabel,
+                'inputType'   => 'select',
+                'options'     => $opt,
+                'value'       => $selectedValue,
+                'reference'   => $ref,
+                'eval'        => [
+                    'mandatory'          => $mandCss,
                     'includeBlankOption' => true,
-                    'maxlength' => 128, 'decodeEntities' => true
+                    'maxlength'          => 128,
+                    'decodeEntities'     => true
                 ]
             ];
         } else {
             $fields['cssClass'] = [
-                'name' => 'cssClass',
-                'label' => $cssLabel,
+                'name'      => 'cssClass',
+                'id'        => 'cssClass',
+                'label'     => $cssLabel,
                 'inputType' => 'text',
-                'value' => $newEventData['cssClass'] ?? '',
-                'eval' => [
-                    'mandatory' => $mandCss,
-                    'maxlength' => 128,
+                'value'     => $newEventData['cssClass'] ?? '',
+                'eval'      => [
+                    'mandatory'      => $mandCss,
+                    'maxlength'      => 128,
                     'decodeEntities' => true
                 ]
             ];
@@ -1379,6 +1466,7 @@ class ModuleEventEditor extends Events
         if ($this->caledit_allowPublish) {
             $fields['published'] = [
                 'name' => 'published',
+                'id'    => 'published',
                 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_published'], // Falls ein Label benötigt wird
                 'inputType' => 'checkbox',
                 'value' => $newEventData['published'] ?? '',
@@ -1398,7 +1486,8 @@ class ModuleEventEditor extends Events
             // create a checkbox "save as copy"
             $fields['saveAs'] = [
                 'name' => 'saveAs',
-                'label' => '', // $GLOBALS['TL_LANG']['MSC']['caledit_saveAs']
+                'id'    => 'saveAs',
+                'label' => $GLOBALS['TL_LANG']['MSC']['caledit_saveAs'],
                 'inputType' => 'checkbox',
                 'value' => $saveAs,
                 'options' =>  [
@@ -1420,6 +1509,7 @@ class ModuleEventEditor extends Events
         // Create jump-to-selection
         $fields['jumpToSelection'] = [
             'name' => 'jumpToSelection',
+            'id'    => 'jumpToSelection',
             'label' => $GLOBALS['TL_LANG']['MSC']['caledit_JumpWhatsNext'],
             'inputType' => 'select',
             // arrOptions wird direkt verwendet
