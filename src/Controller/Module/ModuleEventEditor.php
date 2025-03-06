@@ -1696,7 +1696,7 @@ class ModuleEventEditor extends Events
 
         $objWidget = new FormCaptcha($captchaField);
         if ($currentRequest->request->get('FORM_SUBMIT') === 'caledit_submit') {
-            $objWidget->validate();
+            //$objWidget->validate();
             if ($objWidget->hasErrors()) {
                 $doNotSubmit = true;
             }
@@ -1704,9 +1704,9 @@ class ModuleEventEditor extends Events
         $arrWidgets[$captchaField['name']] = $objWidget;
 
         // Template für Delete-Hinweise und -Buttons befüllen
-        $this->Template->deleteHint = $GLOBALS['TL_LANG']['MSC']['caledit_deleteHint'];
-        $this->Template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_deleteData'];
-        $this->Template->deleteWarning = $GLOBALS['TL_LANG']['MSC']['caledit_deleteWarning'];
+        $this->Template->deleteHint     = $GLOBALS['TL_LANG']['MSC']['caledit_deleteHint'];
+        $this->Template->submit         = $GLOBALS['TL_LANG']['MSC']['caledit_deleteData'];
+        $this->Template->deleteWarning  = $GLOBALS['TL_LANG']['MSC']['caledit_deleteWarning'];
 
         // Löschvorgang
         if (!$doNotSubmit && $currentRequest->request->get('FORM_SUBMIT') === 'caledit_submit') {
