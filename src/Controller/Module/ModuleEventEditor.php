@@ -1696,7 +1696,6 @@ class ModuleEventEditor extends Events
 
         $objWidget = new FormCaptcha($captchaField);
         if ($currentRequest->request->get('FORM_SUBMIT') === 'caledit_submit') {
-            //$objWidget->validate();
             if ($objWidget->hasErrors()) {
                 $doNotSubmit = true;
             }

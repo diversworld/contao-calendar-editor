@@ -37,9 +37,9 @@ class ModuleCalendarEdit extends ModuleCalendar
 		$IDs = array();
 
 		if (is_array($cals)) {
-		foreach ($cals as $flupp) {
-			$IDs[] = $flupp;
-		}
+            foreach ($cals as $flupp) {
+                $IDs[] = $flupp;
+            }
 		}
 		return $IDs;
 	}
@@ -121,6 +121,8 @@ class ModuleCalendarEdit extends ModuleCalendar
 
 			$arrDays[$strWeekClass][$i]['addLabel'] = $GLOBALS['TL_LANG']['MSC']['caledit_addLabel'];
 			$arrDays[$strWeekClass][$i]['addTitle'] = $GLOBALS['TL_LANG']['MSC']['caledit_addTitle'];
+            $arrDays[$strWeekClass][$i]['editLabel'] = $GLOBALS['TL_LANG']['MSC']['caledit_editLabel'];
+            $arrDays[$strWeekClass][$i]['editTitle'] = $GLOBALS['TL_LANG']['MSC']['caledit_editTitle'];
 
 			// Inactive days
 			if (empty($intKey) || !isset($allEvents[$intKey]))
@@ -131,9 +133,9 @@ class ModuleCalendarEdit extends ModuleCalendar
 				if ($this->allowEditEvents && ($this->allowElapsedEvents || ($intKey >= date('Ymd')) )  ){
 					$ts = mktime(8, 0, 0, $intMonth, $intDay, $intYear); // 8:00 at this day
 					$arrDays[$strWeekClass][$i]['addRef'] = $addUrl . '?add=' . Date::parse($dateformat, $ts);
+                    //$arrDays[$strWeekClass][$i]['editRef'] = $addUrl . '?edit=' . $allEvents[$intKey]['id'];
 				}
 				$arrDays[$strWeekClass][$i]['events'] = [];
-
 				continue;
 			}
 
@@ -152,8 +154,11 @@ class ModuleCalendarEdit extends ModuleCalendar
 					if ( in_array($vv['parent'], $validHolidays)) {
 						$holidayEvents[] = $vv;
 					} else {
+                        $vv['editRef'] = $addUrl . '?edit=' . $vv['id'];
+                        $vv['editTitle'] = $GLOBALS['TL_LANG']['MSC']['caledit_editTitle'];
+                        $vv['editLabel'] = $GLOBALS['TL_LANG']['MSC']['caledit_editLabel'];
 						$events[] = $vv;
-					}
+                    }
 				}
 			}
 
@@ -162,15 +167,19 @@ class ModuleCalendarEdit extends ModuleCalendar
 			}
 
 			$arrDays[$strWeekClass][$i]['label'] = $intDay;
+
 			if ($this->allowEditEvents && ($this->allowElapsedEvents || ($intKey >= date('Ymd')) )  ){
 				$ts = mktime(8, 0, 0, $intMonth, $intDay, $intYear); // 8:00 at this day
 				$arrDays[$strWeekClass][$i]['addRef'] = $addUrl . '?add=' . Date::parse($dateformat, $ts);
-			}
+                //$arrDays[$strWeekClass][$i]['editRef'] = $addUrl . '?edit=' . $events[$intKey]['id'];
+            }
+
 			$arrDays[$strWeekClass][$i]['class'] = 'days active' . $strClass;
 			$arrDays[$strWeekClass][$i]['href'] = $this->strLink . '?day=' . $intKey; //$this->strLink
 			$arrDays[$strWeekClass][$i]['title'] = sprintf($GLOBALS['TL_LANG']['MSC']['cal_events'], count($events));
 			$arrDays[$strWeekClass][$i]['events'] = $events;
 			$arrDays[$strWeekClass][$i]['holidayEvents'] = $holidayEvents;
+
 		}
 		return $arrDays;
 	}

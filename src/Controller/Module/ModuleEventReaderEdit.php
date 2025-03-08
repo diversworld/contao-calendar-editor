@@ -172,7 +172,7 @@ class ModuleEventReaderEdit extends Events
                 $this->Template->editRef = $strUrl.'?edit='.$objEvent->id;
                 $this->Template->editLabel = $GLOBALS['TL_LANG']['MSC']['caledit_editLabel'];
                 $this->Template->editTitle = $GLOBALS['TL_LANG']['MSC']['caledit_editTitle'];
-
+                dump($this->Template);
                 if ($this->caledit_showCloneLink) {
                     $this->Template->cloneRef = $strUrl.'?clone='.$objEvent->id;
                     $this->Template->cloneLabel = $GLOBALS['TL_LANG']['MSC']['caledit_cloneLabel'];
