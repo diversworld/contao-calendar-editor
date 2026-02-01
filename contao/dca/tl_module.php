@@ -117,7 +117,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_add_jumpTo'] = array
     'label'                   => &$GLOBALS['TL_LANG']['tl_module']['caledit_add_jumpTo'],
     'inputType'               => 'pageTree',
     'eval'                    => array('fieldType'=>'radio'),
-    'sql'					  => "int(10) unsigned NOT NULL default '0'"
+    'sql'					  => "int unsigned NOT NULL default '0'"
 );
 
 $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_template'] = array
@@ -277,7 +277,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_dateImageSRC'] = array
 //caledit_dateIncludeCSS, caledit_dateIncludeCSSTheme,
 //caledit_dateImage, caledit_dateImageSRC'
 
-class calendar_eventeditor extends Backend //implements ContainerAwareInterface
+class calendar_eventeditor extends Backend 
 {
     private $security;
 

@@ -153,7 +153,7 @@ class CheckAuthService
     }
 
     public
-    function isDateNotElapsed(int $startDate, int $endDate = null): bool
+    function isDateNotElapsed(int $startDate, ?int $endDate = null): bool
     {
         if ($endDate === null) {
             return $this->getMidnightTime() <= $startDate;

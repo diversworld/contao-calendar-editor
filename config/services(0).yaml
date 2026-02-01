@@ -9,6 +9,10 @@ services:
       calls:
         - [ setFramework, [ '@contao.framework' ] ]
 
+    Symfony\Component\DependencyInjection\ContainerAwareInterface:
+      calls:
+        - [ setContainer, [ '@service_container' ] ]
+
   caledit.service.auth:
     class: Diversworld\CalendarEditorBundle\Services\CheckAuthService
     autowire: true
