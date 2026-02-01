@@ -27,7 +27,7 @@ $GLOBALS['TL_DCA']['tl_calendar_events']['fields']['fe_user'] = array
 	'exclude'                 => true,
 	'foreignKey'              => 'tl_member.username',
 	'eval'                    => array('includeBlankOption'=>true, 'tl_class'=>'w50'),
-	'sql'					  => "int unsigned NOT NULL default '0'"
+    'sql' => "int unsigned NOT NULL default '0'"
 );
 
 $GLOBALS['TL_DCA']['tl_calendar_events']['fields']['disable_editing'] = array

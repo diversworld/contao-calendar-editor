@@ -117,7 +117,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_add_jumpTo'] = array
     'label'                   => &$GLOBALS['TL_LANG']['tl_module']['caledit_add_jumpTo'],
     'inputType'               => 'pageTree',
     'eval'                    => array('fieldType'=>'radio'),
-    'sql'					  => "int unsigned NOT NULL default '0'"
+    'sql' => "int unsigned NOT NULL default '0'"
 );
 
 $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_template'] = array

@@ -40,6 +40,6 @@ services:
 
   monolog.logger.contao.general:
     class: Monolog\Logger
-    arguments: ['contao.general']
+    arguments: [ 'contao.general' ]
     tags:
       - { name: monolog.logger, channel: contao.general }

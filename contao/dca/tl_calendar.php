@@ -52,7 +52,7 @@ $GLOBALS['TL_DCA']['tl_calendar']['fields']['caledit_jumpTo'] = array
 	'exclude'                 => true,
 	'inputType'               => 'pageTree',
 	'eval'                    => array('fieldType'=>'radio'),
-	'sql'					  => "int unsigned NOT NULL default '0'"
+    'sql' => "int unsigned NOT NULL default '0'"
 );
 
 $GLOBALS['TL_DCA']['tl_calendar']['fields']['caledit_loginRequired'] = array
