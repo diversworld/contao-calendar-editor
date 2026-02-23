@@ -15,6 +15,8 @@ use Contao\ModuleCalendar;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Symfony\Component\HttpFoundation\RequestStack;
 
+use Psr\Log\LoggerInterface;
+
 class ModuleCalendarEdit extends ModuleCalendar
 {
 	// variable which indicates whether events can be added or not (on elapsed days)
@@ -24,6 +26,7 @@ class ModuleCalendarEdit extends ModuleCalendar
     private ScopeMatcher $scopeMatcher; // Dependency Injection für ScopeMatcher
     private RequestStack $requestStack; // Dependency Injection für RequestStack
     private ?CheckAuthService $checkAuthService = null;
+    private LoggerInterface $logger;
 
     protected function initializeServices( ): void
     {
@@ -31,6 +34,7 @@ class ModuleCalendarEdit extends ModuleCalendar
         $this->checkAuthService = $container->get('caledit.service.auth');
         $this->scopeMatcher = $container->get('contao.routing.scope_matcher');
         $this->requestStack = $container->get('request_stack');
+        $this->logger = $container->get('monolog.logger.contao.general');
 
     }
 
