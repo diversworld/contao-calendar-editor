@@ -92,7 +92,7 @@ class ModuleCalendarEdit extends ModuleCalendar
 		$allEvents = $this->getAllEvents($this->cal_calendar, $this->Date->monthBegin, $this->Date->monthEnd);
 		$arrDays = [];
 
-		$dateformat = Config::get('dateFormat');
+        $dateformat = Config::get('dateFormat');
 
 		// Compile days
 		for ($i=1; $i<=($intNumberOfRows * 7); $i++)

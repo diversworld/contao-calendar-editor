@@ -59,17 +59,17 @@ class ListAllEventsHook extends Frontend
                 $isUserAdminForCalendar[$currentPid] = $this->checkAuthService->isUserAdmin($calendarModel, $this->user);
                 $isUserMemberForCalendar[$currentPid] = $this->checkAuthService->isUserAuthorized($calendarModel, $this->user);
 
-                    // get the jump-to-Edit-page for this calendar
-                    $page = PageModel::findByPk($calendarModel->caledit_jumpTo);
+                // get the jump-to-Edit-page for this calendar
+                $page = PageModel::findByPk($calendarModel->caledit_jumpTo);
 
-                    if ($page !== null) {
-                        $baseUrl = $page->getFrontendUrl();
+                if ($page !== null) {
+                    $baseUrl = $page->getFrontendUrl();
                     } else {
-                        $baseUrl = '';
+                    $baseUrl = '';
                     }
 
                     // Parameter anhängen, z. B. für den Editor-Link
-                    $jumpPages[$currentPid] = $baseUrl; 
+                $jumpPages[$currentPid] = $baseUrl;
             } else {
                 // No editing allowed
                 $isUserAdminForCalendar[$currentPid] = false;
