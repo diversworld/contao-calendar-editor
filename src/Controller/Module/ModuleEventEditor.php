@@ -372,8 +372,8 @@ class ModuleEventEditor extends Events
         //$urlGenerator = System::getContainer()->get('contao.routing.content_url_generator');
 
         // Fill fields with data from $currentEventObject
-        $newEventData['startDate'] = Date::parse($GLOBALS['TL_CONFIG']['dateFormat'], $currentEventObject->startDate);
-        $newEventData['endDate'] = Date::parse($GLOBALS['TL_CONFIG']['dateFormat'], $currentEventObject->endDate);
+        $newEventData['startDate'] = Date::parse(Config::get('dateFormat'), $currentEventObject->startDate);
+        $newEventData['endDate'] = Date::parse(Config::get('dateFormat'), $currentEventObject->endDate);
 
         if ($currentEventObject->addTime) {
             $newEventData['startTime'] = $currentEventObject->startTime;
@@ -395,7 +395,7 @@ class ModuleEventEditor extends Events
         $newEventData['alias'] = $currentEventObject->alias;
 
         $this->Template->CurrentTitle = $currentEventObject->title;
-        $this->Template->CurrentDate = Date::parse($GLOBALS['TL_CONFIG']['dateFormat'], $currentEventObject->startDate);
+        $this->Template->CurrentDate = Date::parse(Config::get('dateFormat'), $currentEventObject->startDate);
 
         $this->Template->CurrentPublished = $currentEventObject->published;
 
@@ -483,7 +483,7 @@ class ModuleEventEditor extends Events
         $eventData['source'] = 'default';
 
         // needed later!
-        $startDate = new Date($eventData['startDate'], $GLOBALS['TL_CONFIG']['dateFormat']);
+        $startDate = new Date($eventData['startDate'], Config::get('dateFormat'));
 
         $eventData['tstamp'] = $startDate->tstamp;
 
@@ -491,7 +491,7 @@ class ModuleEventEditor extends Events
         if (trim($eventData['endDate']) != '') {
             // an enddate is given
             $endDateStr = $eventData['endDate'];
-            $endDate = new Date($eventData['endDate'], $GLOBALS['TL_CONFIG']['dateFormat']);
+            $endDate = new Date($eventData['endDate'], Config::get('dateFormat'));
             $eventData['endDate'] = $endDate->tstamp;
         } else {
             // needed later
@@ -511,7 +511,7 @@ class ModuleEventEditor extends Events
             // Add time to the event
             $useTime = true;
             $eventData['addTime'] = '1';
-            $startTime = new Date($eventData['startDate'] . ' ' . $eventData['startTime'], $GLOBALS['TL_CONFIG']['dateFormat'] . ' ' . $GLOBALS['TL_CONFIG']['timeFormat']);
+            $startTime = new Date($eventData['startDate'] . ' ' . $eventData['startTime'], Config::get('dateFormat') . ' ' . Config::get('timeFormat'));
             $eventData['startTime'] = $startTime->tstamp;
         }
 
@@ -526,7 +526,7 @@ class ModuleEventEditor extends Events
             }
             $dateString = $endDateStr . ' ' . $eventData['endTime'];
         }
-        $endTime = new Date($dateString, $GLOBALS['TL_CONFIG']['datimFormat']);
+        $endTime = new Date($dateString, Config::get('datimFormat'));
         $eventData['endTime'] = $endTime->tstamp;
 
 
@@ -1077,7 +1077,7 @@ class ModuleEventEditor extends Events
                     if ($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit') {
                         $rgxp = $field['eval']['rgxp'] ?? '';
                         if (($rgxp == 'date' || $rgxp == 'time' || $rgxp == 'datim') && $field['value'] != '') {
-                            $objDate = new Date($currentRequest->request->get($field['name']), $GLOBALS['TL_CONFIG'][$rgxp . 'Format']);
+                            $objDate = new Date($currentRequest->request->get($field['name']), Config::get($rgxp . 'Format'));
                             $field['value'] = $objDate->tstamp;
                         }
                     }
@@ -1558,7 +1558,7 @@ class ModuleEventEditor extends Events
             if ($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit') {
                 $rgxp = $field['eval']['rgxp'] ?? '';
                 if (($rgxp == 'date' || $rgxp == 'time' || $rgxp == 'datim') && $field['value'] != '') {
-                    $objDate = new Date($currentRequest->request->get($field['name']), $GLOBALS['TL_CONFIG'][$rgxp . 'Format']);
+                    $objDate = new Date($currentRequest->request->get($field['name']), Config::get($rgxp . 'Format'));
                     $field['value'] = $objDate->tstamp;
                 }
             }
@@ -1898,7 +1898,7 @@ class ModuleEventEditor extends Events
             if ($currentRequest->request->get('FORM_SUBMIT') === 'caledit_submit') {
                 $rgxp = $field['eval']['rgxp'] ?? '';
                 if (($rgxp == 'date' || $rgxp == 'time' || $rgxp == 'datim') && $field['value'] != '') {
-                    $objDate = new Date($currentRequest->request->get($field['name']), $GLOBALS['TL_CONFIG'][$rgxp . 'Format']);
+                    $objDate = new Date($currentRequest->request->get($field['name']), Config::get($rgxp . 'Format'));
                     $field['value'] = $objDate->tstamp;
                 }
             }
@@ -1971,10 +1971,10 @@ class ModuleEventEditor extends Events
 
             // convert the existing timestamps into Strings, so that PutinDB can use them again
             if ($currentEventData['startTime']) {
-                $currentEventData['startTime'] = date($GLOBALS['TL_CONFIG']['timeFormat'], $currentEventData['startTime']);
+                $currentEventData['startTime'] = date(Config::get('timeFormat'), $currentEventData['startTime']);
             }
             if ($currentEventData['endTime']) {
-                $currentEventData['endTime'] = date($GLOBALS['TL_CONFIG']['timeFormat'], $currentEventData['endTime']);
+                $currentEventData['endTime'] = date(Config::get('timeFormat'), $currentEventData['endTime']);
             }
 
             for ($i = 1; $i <= 10; $i++) {

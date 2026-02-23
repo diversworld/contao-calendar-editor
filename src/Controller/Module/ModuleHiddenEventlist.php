@@ -88,14 +88,10 @@ class ModuleHiddenEventlist extends ModuleEventlist
                 /** @var PageModel $objTarget */
                 // Prüfen, ob ein Editor-Ziel (caledit_jumpTo) definiert ist
                 if ($objCalendar !== null && $objCalendar->caledit_jumpTo) {
-                    $objEditorPage = $this->Database
-                        ->prepare("SELECT * FROM tl_page WHERE id=?")
-                        ->limit(1)
-                        ->execute($objCalendar->caledit_jumpTo);
+                    $objEditorPage = PageModel::findByPk($objCalendar->caledit_jumpTo);
 
-                    if ($objEditorPage->numRows > 0) {
-                        $objEditorPage = (object) $objEditorPage->row(); // Editor-Seite laden
-                        $strUrl = '/' . $objEditorPage->alias; // Alias der Editor-Seite nutzen
+                    if ($objEditorPage !== null) {
+                        $strUrl = $objEditorPage->getFrontendUrl();
                     } else {
                         $this->logger->error('ERROR: Keine gültige Editor-Seite (caledit_jumpTo) konfiguriert.');
                     }

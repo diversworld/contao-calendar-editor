@@ -2,6 +2,8 @@
 
 namespace Diversworld\CalendarEditorBundle\Controller\Module;
 
+use Contao\CalendarEventsModel;
+use Contao\PageModel;
 use Contao\BackendTemplate;
 use Contao\Events;
 use Contao\Input;
@@ -89,44 +91,16 @@ class ModuleEventReaderEdit extends Events
         // Get current event
         if (!$hasBackendUser) {
             // Zusatzbedingungen für Frontend-Benutzer vorhanden
-            $objEvent = $this->Database->prepare(
-                "SELECT *,
-                author AS authorId,
-                (SELECT title FROM tl_calendar WHERE tl_calendar.id = tl_calendar_events.pid) AS calendar,
-                (SELECT name FROM tl_user WHERE id = author) author
-                FROM tl_calendar_events
-                WHERE pid IN(" . implode(',', array_map('intval', $this->cal_calendar)) . ")
-                AND (id = ? OR alias = ?)
-                AND (start='' OR start<?)
-                AND (stop='' OR stop>?)
-                AND published = 1"
-                    )
-                    ->limit(1)
-                    ->execute(
-                        (is_numeric(Input::get('auto_item')) ? Input::get('auto_item') : 0),
-                        Input::get('auto_item'),
-                        $time,
-                        $time
-                    );
+            $objEvent = CalendarEventsModel::findPublishedByParentAndIdOrAlias(Input::get('auto_item'), $this->cal_calendar);
         } else {
             // Ohne Zusatzbedingungen für Backend-Benutzer
-            $objEvent = $this->Database->prepare(
-                "SELECT *,
-                author AS authorId,
-                (SELECT title FROM tl_calendar WHERE tl_calendar.id = tl_calendar_events.pid) AS calendar,
-                (SELECT name FROM tl_user WHERE id = author) author
-                FROM tl_calendar_events
-                WHERE pid IN(" . implode(',', array_map('intval', $this->cal_calendar)) . ")
-                AND (id = ? OR alias = ?)"
-                    )
-                    ->limit(1)
-                    ->execute(
-                        (is_numeric(Input::get('auto_item')) ? Input::get('auto_item') : 0),
-                        Input::get('auto_item')
-                    );
+            $objEvent = CalendarEventsModel::findByIdOrAlias(Input::get('auto_item'));
+            if ($objEvent !== null && !in_array($objEvent->pid, $this->cal_calendar)) {
+                $objEvent = null;
+            }
         }
 
-        if ($objEvent->numRows < 1) {
+        if ($objEvent === null) {
             $this->Template->error = $GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed'];
             $this->Template->error_class = 'error';
             return;
@@ -160,13 +134,9 @@ class ModuleEventReaderEdit extends Events
             $strUrl = '';
             if ($areEditLinksAllowed) {
                 // get the JumpToEdit-Page for this calendar
-                $objPage = $this->Database->prepare("SELECT * FROM tl_page WHERE id=(SELECT caledit_jumpTo FROM tl_calendar WHERE id=?)")
-                    ->limit(1)
-                    ->execute($calendarModel->id);
-                if ($objPage->numRows) {
-                    $pageData = (object) $objPage->row();
-                    //$strUrl = $this->generateEventUrl($pageData, '');
-                    $strUrl = '/' . $pageData->alias;
+                $objPage = PageModel::findByPk($calendarModel->caledit_jumpTo);
+                if ($objPage !== null) {
+                    $strUrl = $objPage->getFrontendUrl();
                 }
 
                 $this->Template->editRef = $strUrl.'?edit='.$objEvent->id;

@@ -8,6 +8,7 @@ use Contao\FrontendUser;
 use Contao\PageModel;
 use Contao\StringUtil;
 use Contao\System;
+use Contao\Config;
 use Diversworld\CalendarEditorBundle\Models\CalendarModelEdit;
 use Diversworld\CalendarEditorBundle\Services\CheckAuthService;
 use Contao\ModuleCalendar;
@@ -91,7 +92,7 @@ class ModuleCalendarEdit extends ModuleCalendar
 		$allEvents = $this->getAllEvents($this->cal_calendar, $this->Date->monthBegin, $this->Date->monthEnd);
 		$arrDays = [];
 
-		$dateformat = $GLOBALS['TL_CONFIG']['dateFormat'];
+		$dateformat = Config::get('dateFormat');
 
 		// Compile days
 		for ($i=1; $i<=($intNumberOfRows * 7); $i++)

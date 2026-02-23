@@ -2,6 +2,7 @@
 
 namespace Diversworld\CalendarEditorBundle\Hooks;
 
+use Contao\PageModel;
 use Contao\FrontendUser;
 use Contao\System;
 use Diversworld\CalendarEditorBundle\Models\CalendarModelEdit;
@@ -58,26 +59,17 @@ class ListAllEventsHook extends Frontend
                 $isUserAdminForCalendar[$currentPid] = $this->checkAuthService->isUserAdmin($calendarModel, $this->user);
                 $isUserMemberForCalendar[$currentPid] = $this->checkAuthService->isUserAuthorized($calendarModel, $this->user);
 
-                // Get the jump-to-Edit-page for this calendar
-                $page = $this->Database->prepare("SELECT * FROM tl_page WHERE id=(SELECT caledit_jumpTo FROM tl_calendar WHERE id=?)")
-                    ->limit(1)
-                    ->execute($calendarModel->id);
+                    // get the jump-to-Edit-page for this calendar
+                    $page = PageModel::findByPk($calendarModel->caledit_jumpTo);
 
-                if ($page->numRows === 1) {
-                    $pageData = (object) $page->row(); // Die Seite holen, die im Kalender hinterlegt ist.
-
-                    // Prüfen, ob ein Alias für die Seite existiert:
-                    if (!empty($pageData->alias)) {
-                        $baseUrl = '/' . $pageData->alias; // Alias-basierte URL
+                    if ($page !== null) {
+                        $baseUrl = $page->getFrontendUrl();
                     } else {
-                        // Fallback: Generiere die URL mit der Seiten-ID (falls kein Alias vorhanden)
-                        $baseUrl = '/index.php?id=' . $pageData->id;
+                        $baseUrl = '';
                     }
 
                     // Parameter anhängen, z. B. für den Editor-Link
-                    $jumpPages[$currentPid] = $baseUrl . '?edit=' . $pageData->id; // $eventId ist die Event-ID
-
-                }
+                    $jumpPages[$currentPid] = $baseUrl; 
             } else {
                 // No editing allowed
                 $isUserAdminForCalendar[$currentPid] = false;
