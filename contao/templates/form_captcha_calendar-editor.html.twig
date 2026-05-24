@@ -1,0 +1,23 @@
+<tr>
+    <td class="label">
+        {{ self.generateQuestion()|raw }}
+        <span class="mandatory">*</span>
+    </td>
+
+    <td class="value">
+        {{ self.generateWithError()|raw }}
+    </td>
+
+    {% if not self.hasErrors() %}
+        <td style="display:none">
+            <label for="ctrl_{{ id }}_hp">Do not fill in this field</label>
+            <input type="text" name="{{ name }}_name" id="ctrl_{{ id }}_hp" value="">
+        </td>
+        <script>
+            document.getElementById('ctrl_{{ id }}').parentNode.parentNode.style.display = 'none';
+            document.getElementById('ctrl_{{ id }}').value = '{{ arrCaptcha.sum }}';
+        </script>
+    {% endif %}
+</tr>
+
+<input type="hidden" name="{{ name }}_hash" value="{{ arrCaptcha.hashes[0] }}">

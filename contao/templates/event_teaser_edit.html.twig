@@ -1,0 +1,37 @@
+<div class="event layout_teaser{{ classList }}">
+    {% if header %}
+        <div class="header{{ classHeader }}">
+            <span class="date">{{ firstDate }}</span>{% if firstDay %} <span class="day">
+                ({{ firstDay }})</span>{% endif %}
+        </div>
+    {% endif %}
+
+    {% if details %}
+        <h2><a href="{{ href }}"
+               title="{{ title }} ({% if day %}{{ day }}, {% endif %}{{ date }}{% if time %}, {{ time }}{% endif %})"{{ target|raw }}>{{ link }}</a>
+        </h2>
+    {% else %}
+        <h2>{{ title }}</h2>
+    {% endif %}
+
+    {% if time or span %}
+        <p class="time">{{ time }}{{ span }}</p>
+    {% endif %}
+
+    {% if location %}
+        <p class="location">{{ locationLabel }}: {{ location }}</p>
+    {% endif %}
+
+    <div class="teaser">
+        {{ teaser|raw }}
+    </div>
+
+    {% if details %}
+        <p class="more"><a href="{{ href }}" title="{{ readMore }}"{{ target|raw }}>{{ more }} <span
+                        class="invisible">{{ link }}</span></a></p>
+    {% endif %}
+
+    {% if editRef %}
+        <p class="editlink"><a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a></p>
+    {% endif %}
+</div>

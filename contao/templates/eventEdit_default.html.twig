@@ -1,0 +1,124 @@
+<div class="mod_EventEditor block">
+    {% if headline %}
+    <{{ hl }}>{{ headline }}</{{ hl }}>
+{% endif %}
+
+<p class="error">
+    {{ InfoMessage }}
+</p>
+
+<h2>{{ 'MSC.caledit_currentActionEdit'|trans({}, 'contao_default') }}</h2>
+
+<p class="caledit_info">
+    {% if CurrentEventLink %}
+        <span class="date"> {{ CurrentDate }}: </span><span class="title">{{ CurrentTitle }}</span>
+        <span class="caledit_publishinfo"> ({{ CurrentPublishedInfo }}) </span>
+    {% else %}
+        <span class="caledit_publishinfo"> ({{ CurrentPublishedInfo }}) </span>
+    {% endif %}
+</p>
+
+{% if deleteRef or cloneRef or editRef or CurrentEventLink %}
+    <ul class="CalendarEditActionList">
+        {% if CurrentEventLink %}
+            <li class="viewlink"><a href="{{ CurrentEventLink }}"
+                                    title="{{ CurrentTitle }}"> {{ 'MSC.caledit_viewLabel'|trans({}, 'contao_default') }} </a>
+            </li>
+        {% endif %}
+        {% if editRef %}
+            <li class="editlink"><a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a></li>
+        {% endif %}
+        {% if cloneRef %}
+            <li class="clonelink"><a href="{{ cloneRef }}" title="{{ cloneTitle }}"> {{ cloneLabel }} </a></li>
+        {% endif %}
+        {% if deleteRef %}
+            <li class="deletelink"><a href="{{ deleteRef }}" title="{{ deleteTitle }}"> {{ deleteLabel }} </a></li>
+        {% endif %}
+    </ul>
+{% endif %}
+
+    {% if not fields %}
+        <h2>{{ 'MSC.caledit_InsertEventData'|trans({}, 'contao_default') }}</h2>
+        <p class="error">{{ FatalError }}</p>
+    {% else %}
+        <div class="event{{ classList }}">
+            <h2>{{ 'MSC.caledit_InsertEventData'|trans({}, 'contao_default') }}</h2>
+
+            {% if ContentWarning %}
+                <p class="CalendarEditWarning"> {{ ContentWarning }} </p>
+            {% endif %}
+
+            {% if ImageWarning %}
+                <p class="CalendarEditWarning"> {{ ImageWarning }} </p>
+            {% endif %}
+
+            <div class="formbody">
+                <form action="{{ action }}" method="post">
+                    <input type="hidden" name="FORM_SUBMIT" value="caledit_submit"/>
+                    {{ messages|raw }}
+                    <input type="hidden" name="REQUEST_TOKEN" value="{{ requestToken }}">
+
+                    {% if fields.startDate %}
+                        {{ fields.startDate.parse()|raw }}
+                    {% endif %}
+
+                    {% if fields.endDate %}
+                        {{ fields.endDate.parse()|raw }}
+                    {% endif %}
+
+                    {% if fields.startTime %}
+                        {{ fields.startTime.parse()|raw }}
+                    {% endif %}
+
+                    {% if fields.endTime %}
+                        {{ fields.endTime.parse()|raw }}
+                    {% endif %}
+
+                    {% if fields.title %}
+                        {{ fields.title.parse()|raw }}
+                    {% endif %}
+
+                    {% if fields.cssClass %}
+                        {{ fields.cssClass.parse()|raw }}
+                    {% endif %}
+
+                    {% if fields.location %}
+                        {{ fields.location.parse()|raw }}
+                    {% endif %}
+
+                    {% if fields.teaser %}
+                        {{ fields.teaser.parse()|raw }}
+                    {% endif %}
+
+                    {% if fields.details %}
+                        {{ fields.details.parse()|raw }}
+                    {% endif %}
+
+                    {% if fields.published %}
+                        {{ fields.published.parse()|raw }}
+                    {% endif %}
+
+                    {% if fields.saveAs is defined and fields.saveAs %}
+                        {{ fields.saveAs.parse()|raw }}
+                    {% endif %}
+
+                    {% if fields.pid is defined and fields.pid %}
+                        {{ fields.pid.parse()|raw }}
+                    {% endif %}
+
+                    {% if fields.captcha is defined and fields.captcha %}
+                        {{ fields.captcha.parse()|raw }}
+                    {% endif %}
+
+                    {% if fields.jumpToSelection is defined and fields.jumpToSelection %}
+                        {{ fields.jumpToSelection.parse()|raw }}
+                    {% endif %}
+
+                    <div>
+                        <input type="submit" class="submit" value="{{ submit }}"/>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+</div>

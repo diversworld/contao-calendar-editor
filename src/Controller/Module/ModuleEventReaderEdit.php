@@ -3,184 +3,171 @@
 namespace Diversworld\CalendarEditorBundle\Controller\Module;
 
 use Contao\CalendarEventsModel;
+use Contao\CoreBundle\Controller\FrontendModule\AbstractFrontendModuleController;
+use Contao\CoreBundle\DependencyInjection\Attribute\AsFrontendModule;
+use Contao\CoreBundle\Framework\ContaoFramework;
+use Contao\FrontendUser;
+use Contao\ModuleModel;
 use Contao\PageModel;
-use Contao\BackendTemplate;
-use Contao\Events;
-use Contao\Input;
 use Contao\StringUtil;
-use Contao\System;
+use Contao\Template;
 use Diversworld\CalendarEditorBundle\Models\CalendarModelEdit;
 use Diversworld\CalendarEditorBundle\Services\CheckAuthService;
-use Contao\FrontendTemplate;
-use Contao\FrontendUser;
-class ModuleEventReaderEdit extends Events
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bundle\SecurityBundle\Security;
+
+#[AsFrontendModule(category: 'calendar', template: 'mod_event_ReaderEditLink')]
+class ModuleEventReaderEdit extends AbstractFrontendModuleController
 {
     /**
-     * Template
-     * @var string
+     * @var ModuleModel|null
      */
-    protected $strTemplate = 'mod_event_ReaderEditLink';
+    protected $model;
 
-    private $scopeMatcher;
-
-    public function isBackend(): bool
+    public function __construct(
+        private CheckAuthService|ModuleModel|null $checkAuthService = null,
+        private ContaoFramework|string|null       $framework = null,
+        private ?Security                         $security = null,
+        ModuleModel|null                          $model = null,
+    )
     {
-        if ($this->scopeMatcher === null) {
-            $this->scopeMatcher = System::getContainer()->get('contao.routing.scope_matcher');
+        if ($this->checkAuthService instanceof ModuleModel) {
+            $model = $this->checkAuthService;
+            $this->checkAuthService = null;
         }
 
-        return $this->scopeMatcher->isBackendRequest(System::getContainer()->get('request_stack')->getCurrentRequest());
+        if (is_string($this->framework)) {
+            $this->framework = null;
+        }
+
+        if ($model !== null) {
+            $this->model = $model;
+        }
+
+        $this->initializeServices();
     }
 
-    public function isFrontend(): bool
+    protected function initializeServices(): void
     {
-        if ($this->scopeMatcher === null) {
-            $this->scopeMatcher = System::getContainer()->get('contao.routing.scope_matcher');
+        if ($this->checkAuthService instanceof CheckAuthService && $this->framework instanceof ContaoFramework) {
+            return;
         }
 
-        return $this->scopeMatcher->isFrontendRequest(System::getContainer()->get('request_stack')->getCurrentRequest());
+        $container = System::getContainer();
+        $this->checkAuthService = $container->get('caledit.service.auth');
+        $this->framework = $container->get('contao.framework');
+        $this->security = $container->get('security.helper');
     }
 
-    public function generate() : string
+    protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
     {
-        if ($this->isBackend()) {
-            $objTemplate = new BackendTemplate('be_wildcard');
-
-            $objTemplate->wildcard = '### EVENT READER EDIT LINK ###';
-            $objTemplate->title = $this->headline;
-            $objTemplate->id = $this->id;
-            $objTemplate->link = $this->name;
-            $objTemplate->href = 'contao/main.php?do=themes&amp;table=tl_module&amp;table=tl_module&amp;act=edit&amp;id=' . $this->id;
-
-            return $objTemplate->parse();
+        // Return if no event has been specified
+        if (!$request->query->has('auto_item') && !($request->attributes->has('_route_params') && isset($request->attributes->get('_route_params')['auto_item']))) {
+            return new Response('');
         }
 
-        //Return if no event has been specified
-        if (!Input::get('auto_item')) {
-            return '';
-        }
+        $autoItem = $request->query->get('auto_item') ?: $request->attributes->get('_route_params')['auto_item'];
 
-        $this->cal_calendar = $this->sortOutProtected(StringUtil::deserialize($this->cal_calendar));
+        $calendars = StringUtil::deserialize($model->cal_calendar);
 
         // Return if there are no calendars
-        if (!is_array($this->cal_calendar) || count($this->cal_calendar) < 1)
-        {
-            return '';
-        }
-        return parent::generate();
-    }
-
-    protected function compile(): void
-    {
-        $this->Template = new FrontendTemplate($this->strTemplate);
-        $this->Template->editRef = '';
-
-        // FE user is logged in
-        $token = System::getContainer()->get('security.token_storage')->getToken();
-        // FrontendUser laden
-        if ($token !== null && $token->getUser() instanceof FrontendUser) {
-            $this->User = $token->getUser();
-        } else {
-            $this->User = null; // Kein Benutzer eingeloggt
+        if (!is_array($calendars) || count($calendars) < 1) {
+            return new Response('');
         }
 
-        $time = time();
+        $template->editRef = '';
+        $headline = StringUtil::deserialize($model->headline);
+        $template->headline = is_array($headline) ? $headline['value'] : $model->headline;
+        $template->hl = $model->hl ?: 'h1';
+        $user = $this->security->getUser();
 
-        $hasBackendUser = System::getContainer()->get('contao.security.token_checker')->hasBackendUser();
+        if (!$user instanceof FrontendUser) {
+            $user = null;
+        }
+
+        /** @var CalendarEventsModel $calendarEventsModelAdapter */
+        $calendarEventsModelAdapter = $this->framework->getAdapter(CalendarEventsModel::class);
+
+        $hasBackendUser = $this->security->isGranted('ROLE_USER'); // Simplified for now, or use proper Contao role
 
         // Get current event
         if (!$hasBackendUser) {
-            // Zusatzbedingungen für Frontend-Benutzer vorhanden
-            $objEvent = CalendarEventsModel::findPublishedByParentAndIdOrAlias(Input::get('auto_item'), $this->cal_calendar);
+            $objEvent = $calendarEventsModelAdapter->findPublishedByParentAndIdOrAlias($autoItem, $calendars);
         } else {
-            // Ohne Zusatzbedingungen für Backend-Benutzer
-            $objEvent = CalendarEventsModel::findByIdOrAlias(Input::get('auto_item'));
-            if ($objEvent !== null && !in_array($objEvent->pid, $this->cal_calendar)) {
+            $objEvent = $calendarEventsModelAdapter->findByIdOrAlias($autoItem);
+            if ($objEvent !== null && !in_array($objEvent->pid, $calendars)) {
                 $objEvent = null;
             }
         }
 
         if ($objEvent === null) {
-            $this->Template->error = $GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed'];
-            $this->Template->error_class = 'error';
-            return;
+            $template->error = $GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed'];
+            $template->error_class = 'error';
+            return $template->getResponse();
         }
 
-        // get Calender with PID
-        $calendarModel = CalendarModelEdit::findByPk($objEvent->pid);
+        /** @var CalendarModelEdit $calendarModelEditAdapter */
+        $calendarModelEditAdapter = $this->framework->getAdapter(CalendarModelEdit::class);
+        $calendarModel = $calendarModelEditAdapter->findByPk($objEvent->pid);
 
         if ($calendarModel === null) {
-            return;
+            return new Response('');
         }
 
-        if ($calendarModel->AllowEdit) {
-            // Calendar allows editing
-            // check user rights
-            /** @var CheckAuthService $checkAuthService */
-            $checkAuthService = System::getContainer()->get('caledit.service.auth');
+        if ($calendarModel->AllowEdit === '1') {
+            $isUserAuthorized = $this->checkAuthService->isUserAuthorized($calendarModel, $user);
+            $isUserAdmin = $this->checkAuthService->isUserAdmin($calendarModel, $user);
+            $authorizedElapsedEvents = $this->checkAuthService->isUserAuthorizedElapsedEvents($calendarModel, $user);
+            $areEditLinksAllowed = $this->checkAuthService->areEditLinksAllowed($calendarModel, $objEvent->row(), $user ? (int)$user->id : 0, $isUserAdmin, $isUserAuthorized);
 
-            if (System::getContainer()->get('contao.security.token_checker')->hasFrontendUser()) {
-                $frontendUser = FrontendUser::getInstance(); // Hole den aktuellen User
-            } else {
-                $frontendUser = null; // Kein Benutzer vorhanden
-            }
-
-            $isUserAuthorized = $checkAuthService->isUserAuthorized($calendarModel, $this->User);
-            $isUserAdmin = $checkAuthService->isUserAdmin($calendarModel, $this->User);
-
-            $authorizedElapsedEvents = $checkAuthService->isUserAuthorizedElapsedEvents($calendarModel, $this->User);
-            $areEditLinksAllowed = $checkAuthService->areEditLinksAllowed($calendarModel, $objEvent->row(), $this->User->id, $isUserAdmin, $isUserAuthorized);
-
-            $strUrl = '';
             if ($areEditLinksAllowed) {
-                // get the JumpToEdit-Page for this calendar
-                $objPage = PageModel::findByPk($calendarModel->caledit_jumpTo);
+                /** @var PageModel $pageModelAdapter */
+                $pageModelAdapter = $this->framework->getAdapter(PageModel::class);
+                $objPage = $pageModelAdapter->findByPk($calendarModel->caledit_jumpTo);
+
                 if ($objPage !== null) {
                     $strUrl = $objPage->getFrontendUrl();
-                }
 
-                $this->Template->editRef = $strUrl.'?edit='.$objEvent->id;
-                $this->Template->editLabel = $GLOBALS['TL_LANG']['MSC']['caledit_editLabel'];
-                $this->Template->editTitle = $GLOBALS['TL_LANG']['MSC']['caledit_editTitle'];
-                dump($this->Template);
-                if ($this->caledit_showCloneLink) {
-                    $this->Template->cloneRef = $strUrl.'?clone='.$objEvent->id;
-                    $this->Template->cloneLabel = $GLOBALS['TL_LANG']['MSC']['caledit_cloneLabel'];
-                    $this->Template->cloneTitle = $GLOBALS['TL_LANG']['MSC']['caledit_cloneTitle'];
-                }
-                if ($this->caledit_showDeleteLink) {
-                    $this->Template->deleteRef = $strUrl.'?delete='.$objEvent->id;
-                    $this->Template->deleteLabel = $GLOBALS['TL_LANG']['MSC']['caledit_deleteLabel'];
-                    $this->Template->deleteTitle = $GLOBALS['TL_LANG']['MSC']['caledit_deleteTitle'];
-                }
+                    $template->editRef = $strUrl . '?edit=' . $objEvent->id;
+                    $template->editLabel = $GLOBALS['TL_LANG']['MSC']['caledit_editLabel'];
+                    $template->editTitle = $GLOBALS['TL_LANG']['MSC']['caledit_editTitle'];
 
+                    if ($model->caledit_showCloneLink) {
+                        $template->cloneRef = $strUrl . '?clone=' . $objEvent->id;
+                        $template->cloneLabel = $GLOBALS['TL_LANG']['MSC']['caledit_cloneLabel'];
+                        $template->cloneTitle = $GLOBALS['TL_LANG']['MSC']['caledit_cloneTitle'];
+                    }
+                    if ($model->caledit_showDeleteLink) {
+                        $template->deleteRef = $strUrl . '?delete=' . $objEvent->id;
+                        $template->deleteLabel = $GLOBALS['TL_LANG']['MSC']['caledit_deleteLabel'];
+                        $template->deleteTitle = $GLOBALS['TL_LANG']['MSC']['caledit_deleteTitle'];
+                    }
+                }
             } else {
                 if (!$isUserAuthorized) {
-                    $this->Template->error_class = 'error';
-                    $this->Template->error = $GLOBALS['TL_LANG']['MSC']['caledit_UnauthorizedUser'];
-                    return;
+                    $template->error_class = 'error';
+                    $template->error = $GLOBALS['TL_LANG']['MSC']['caledit_UnauthorizedUser'];
+                    return $template->getResponse();
                 }
 
                 if ($objEvent->disable_editing) {
-                    // the event is locked in the backend
-                    $this->Template->error = $GLOBALS['TL_LANG']['MSC']['caledit_DisabledEvent'];
-                    $this->Template->error_class = 'error';
+                    $template->error = $GLOBALS['TL_LANG']['MSC']['caledit_DisabledEvent'];
+                    $template->error_class = 'error';
                 } else {
                     if (!$authorizedElapsedEvents) {
-                        // the user is authorized, but the event has elapsed
-                        $this->Template->error = $GLOBALS['TL_LANG']['MSC']['caledit_NoPast'];
+                        $template->error = $GLOBALS['TL_LANG']['MSC']['caledit_NoPast'];
                     } else {
-                        // the user is NOT authorized at all (reason: only the creator can edit it)
-                        $this->Template->error = $GLOBALS['TL_LANG']['MSC']['caledit_OnlyUser'];
+                        $template->error = $GLOBALS['TL_LANG']['MSC']['caledit_OnlyUser'];
                     }
-                    $this->Template->error_class = 'error';
+                    $template->error_class = 'error';
                 }
             }
         } else {
-            $this->Template->error_class = 'error';
-            $this->Template->error = $GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed'];
+            $template->error_class = 'error';
+            $template->error = $GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed'];
         }
+
+        return $template->getResponse();
     }
 }
-
-?>

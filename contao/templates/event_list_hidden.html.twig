@@ -1,0 +1,11 @@
+<div class="event layout_upcoming{{ classUpcoming }}">
+    <p>
+        <span class="date">{% if day %}{{ day }}, {% endif %}{{ date }}</span>{% if time %}, <span
+                class="time">{{ time }}</span>{% endif %} <span class="title">{{ title }}</span>
+        {% if editRef %}
+            <span class="editlink">
+                <a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a>
+            </span>
+        {% endif %}
+    </p>
+</div>

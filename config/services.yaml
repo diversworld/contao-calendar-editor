@@ -3,39 +3,16 @@ services:
     autowire: true
     autoconfigure: true
     public: false
-
-  _instanceof:
-    Contao\CoreBundle\Framework\FrameworkAwareInterface:
-      calls:
-        - [ setFramework, [ '@contao.framework' ] ]
-
-  caledit.service.auth:
-    class: Diversworld\CalendarEditorBundle\Services\CheckAuthService
-    autowire: true
-    autoconfigure: true
-    public: true
+    bind:
+      $projectDir: '%kernel.project_dir%'
 
   Diversworld\CalendarEditorBundle\:
-    resource: ../src/
-    exclude: ../src/{DependencyInjection,Model}
+    resource: '../src/'
+    exclude: '../src/{DependencyInjection,Models,CalendarEditorBundle.php}'
 
-  Diversworld\CalendarEditorBundle\Controller\Module\ModuleCalendarEdit:
-    calls:
-      - [ setCheckAuthService, [ '@caledit.service.auth' ] ]
+  caledit.service.auth:
+    alias: Diversworld\CalendarEditorBundle\Services\CheckAuthService
+    public: true
 
-  Diversworld\CalendarEditorBundle\Controller\Module\ModuleEventEditor:
-    arguments:
-      - '@?logger'
-      - '@contao.security.token_checker'
-    tags:
-      - { name: monolog.logger, channel: contao.general }
-
-  Diversworld\CalendarEditorBundle\Hooks\ListAllEventsHook:
-    arguments:
-      $checkAuthService: '@caledit.service.auth'
-
-  monolog.logger.contao.general:
-    class: Monolog\Logger
-    arguments: ['contao.general']
-    tags:
-      - { name: monolog.logger, channel: contao.general }
+  Diversworld\CalendarEditorBundle\Dca\ModuleDca:
+    public: true

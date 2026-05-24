@@ -14,9 +14,9 @@ use function Diversworld\CalendarEditorBundle\UserIsAuthorizedUser;
 
 class CheckAuthService
 {
-    public function isUserAuthorized($calendar, FrontendUser $user): bool
+    public function isUserAuthorized($calendar, FrontendUser|null $user = null): bool
     {
-        if (!$calendar->AllowEdit) {
+        if ($calendar->AllowEdit !== '1') {
             return false;
         }
 
@@ -25,9 +25,13 @@ class CheckAuthService
             return true;
         }
 
-        $hasFrontendUser = System::getContainer()->get('contao.security.token_checker')->hasFrontendUser();
+        $tokenChecker = System::getContainer()->get('contao.security.token_checker');
 
-        if ($hasFrontendUser) {
+        if ($user === null && $tokenChecker->hasFrontendUser()) {
+            $user = $tokenChecker->getFrontendUser();
+        }
+
+        if ($user instanceof FrontendUser) {
             // Admins are authorized as well ;-)
             if ($this->isUserAdmin($calendar, $user)) {
                 return true;
@@ -44,15 +48,19 @@ class CheckAuthService
         return false;
     }
 
-    public function isUserAdmin($calendar, FrontendUser $user): bool
+    public function isUserAdmin($calendar, FrontendUser|null $user = null): bool
     {
-        if (!$calendar->AllowEdit) {
+        if ($calendar->AllowEdit !== '1') {
             return false;
         }
 
-        $hasFrontendUser =  System::getContainer()->get('contao.security.token_checker')->hasFrontendUser();
+        $tokenChecker = System::getContainer()->get('contao.security.token_checker');
 
-        if ($hasFrontendUser) {
+        if ($user === null && $tokenChecker->hasFrontendUser()) {
+            $user = $tokenChecker->getFrontendUser();
+        }
+
+        if ($user instanceof FrontendUser) {
             // Get Admin-Groups which are allowed to edit events in this calendar
             // (Admins are allowed to edit events even if the "only owner"-setting is checked)
             // (Admins are allowed to add events on elapsed days)
@@ -66,9 +74,9 @@ class CheckAuthService
         return false;
     }
 
-    public function isUserAuthorizedElapsedEvents($calendar, FrontendUser $user): bool
+    public function isUserAuthorizedElapsedEvents($calendar, FrontendUser|null $user = null): bool
     {
-        if (!$calendar->AllowEdit) {
+        if ($calendar->AllowEdit !== '1') {
             return false;
         }
 
@@ -107,16 +115,24 @@ class CheckAuthService
             );
     }
 
-    public function EditLinksAreAllowed2($calendar, $event, FrontendUser $user, bool $isUserAdmin, bool $isUserMember): bool
+    public function EditLinksAreAllowed2($calendar, $event, FrontendUser|null $user = null, bool $isUserAdmin, bool $isUserMember): bool
     {
-        $hasFrontendUser =  System::getContainer()->get('contao.security.token_checker')->hasFrontendUser();
+        $tokenChecker = System::getContainer()->get('contao.security.token_checker');
 
-        if (!$calendar->AllowEdit) {
+        if ($calendar->AllowEdit !== '1') {
             return false;
+        }
+
+        if ($user === null && $tokenChecker->hasFrontendUser()) {
+            $user = $tokenChecker->getFrontendUser();
         }
 
         if ($isUserAdmin && (!$event->disable_editing)) {
             return TRUE;
+        }
+
+        if (!$user instanceof FrontendUser) {
+            return false;
         }
 
         return
@@ -126,7 +142,7 @@ class CheckAuthService
                 // Allow only if the User belongs to an authorized Member group
                 && ($isUserMember)
                 // Allow only if FE User is logged in or the calendar does not requie login
-                && ($hasFrontendUser || !$calendar->caledit_loginRequired)
+                && ($tokenChecker->hasFrontendUser() || !$calendar->caledit_loginRequired)
                 // Allow only if CalendarEditing is not restricted to future events -OR- EventTime is later then CurrentTime,
                 //&& ((!$objCalendar->caledit_onlyFuture) ||  (time() <= $objEvent->startTime) )
                 && ((!$calendar->caledit_onlyFuture) || (EventIsNotElapsed2($event)))

@@ -7,7 +7,11 @@ use Contao\CalendarEventsModel;
 use Contao\CalendarModel;
 use Contao\Config;
 use Contao\ContentModel;
+use Contao\CoreBundle\Controller\FrontendModule\AbstractFrontendModuleController;
+use Contao\CoreBundle\DependencyInjection\Attribute\AsFrontendModule;
+use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\CoreBundle\Routing\ScopeMatcher;
+use Contao\Date;
 use Contao\Email;
 use Contao\FormCaptcha;
 use Contao\FormCheckbox;
@@ -15,27 +19,316 @@ use Contao\FormRadio;
 use Contao\FormSelect;
 use Contao\FormText;
 use Contao\FormTextarea;
+use Contao\FrontendTemplate;
 use Contao\FrontendUser;
-use Contao\Image\Exception\InvalidArgumentException;
+use Contao\ModuleModel;
 use Contao\PageModel;
 use Contao\StringUtil;
 use Contao\System;
-use Diversworld\CalendarEditorBundle\Models\CalendarEventsModelEdit;
+use Contao\Template;
 use Diversworld\CalendarEditorBundle\Models\CalendarModelEdit;
 use Diversworld\CalendarEditorBundle\Services\CheckAuthService;
-use Contao\Date;
-use Contao\Events;
-use Contao\FrontendTemplate;
 use Doctrine\DBAL\Connection;
-use Psr\Log\LoggerInterface;
+use InvalidArgumentException;
 use RuntimeException;
+use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Contao\CoreBundle\Security\Authentication\Token\TokenChecker;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpFoundation\Response;
+use Psr\Log\LoggerInterface;
 
-#[Route('/{_locale}', name: 'calendar_editor_locale', methods: ['GET'])]
-class ModuleEventEditor extends Events
+#[AsFrontendModule(category: 'calendar', template: 'eventEdit_default')]
+class ModuleEventEditor extends AbstractFrontendModuleController
 {
+    /**
+     * @var array
+     */
+    protected $cal_calendar;
+
+    /**
+     * @var FrontendUser|null
+     */
+    protected $User;
+
+    /**
+     * @var FrontendTemplate|Template
+     */
+    protected $Template;
+
+    /**
+     * @var string
+     */
+    protected $rteFields;
+
+    /**
+     * @var string
+     */
+    protected $language;
+
+    /**
+     * @var int|string
+     */
+    protected $id;
+
+    /**
+     * @var string
+     */
+    protected $headline;
+
+    /**
+     * @var string
+     */
+    protected $name;
+
+    /**
+     * @var string
+     */
+    protected $type;
+
+    /**
+     * @var string
+     */
+    protected $customTpl;
+
+    /**
+     * @var bool
+     */
+    protected $caledit_sendMail;
+
+    /**
+     * @var bool
+     */
+    protected $caledit_allowPublish;
+
+    /**
+     * @var string
+     */
+    protected $caledit_mailRecipient;
+
+    /**
+     * @var string
+     */
+    protected $caledit_mailSubject;
+
+    /**
+     * @var string
+     */
+    protected $caledit_usePredefinedCss;
+
+    /**
+     * @var string
+     */
+    protected $caledit_cssValues;
+
+    /**
+     * @var string
+     */
+    protected $caledit_alternateCSSLabel;
+
+    /**
+     * @var string
+     */
+    protected $caledit_template;
+
+    /**
+     * @var string
+     */
+    protected $caledit_delete_template;
+
+    /**
+     * @var string
+     */
+    protected $caledit_clone_template;
+
+    /**
+     * @var bool
+     */
+    protected $caledit_allowDelete;
+
+    /**
+     * @var bool
+     */
+    protected $caledit_allowClone;
+
+    /**
+     * @var bool
+     */
+    protected $caledit_useDatePicker;
+
+    /**
+     * @var string
+     */
+    protected $caledit_mandatoryfields;
+
+    /**
+     * @var string
+     */
+    protected $caledit_dateIncludeCSSTheme;
+
+    /**
+     * @var string
+     */
+    protected $caledit_dateDirection;
+
+    /**
+     * @var bool
+     */
+    protected $caledit_dateImage;
+
+    /**
+     * @var string
+     */
+    protected $caledit_dateImageSRC;
+
+    /**
+     * @var mixed
+     */
+    protected $jumpTo;
+
+    /**
+     * @var \Contao\CoreBundle\Security\Authentication\Token\TokenChecker
+     */
+    protected $tokenChecker;
+
+    /**
+     * @var CheckAuthService|null
+     */
+    protected $checkAuthService;
+
+    /**
+     * @var ModuleModel|null
+     */
+    protected $model;
+
+    public function __construct(
+        private CheckAuthService|ModuleModel|null $calEditCheckAuthService = null,
+        private ContaoFramework|string|null       $framework = null,
+        private ?Security                         $security = null,
+        private ?LoggerInterface                  $calEditLogger = null,
+        private ?ScopeMatcher                     $scopeMatcher = null,
+        private ?RequestStack                     $requestStack = null,
+        private ?Connection                       $connection = null,
+        ModuleModel|null                          $model = null,
+    )
+    {
+        if ($this->calEditCheckAuthService instanceof ModuleModel) {
+            $model = $this->checkAuthService = $this->calEditCheckAuthService;
+            $this->calEditCheckAuthService = null;
+        }
+
+        if (is_string($this->framework)) {
+            $this->framework = null;
+        }
+
+        if ($model !== null) {
+            // Do not call parent::__construct($model) if $model is NOT a ModuleModel
+            // although it is typed, Contao might pass something else if we are not careful
+            // but here we check for instanceof ModuleModel above.
+
+            // AbstractFrontendModuleController does not have a constructor that takes arguments.
+            // It has a $model property.
+            $this->model = $model;
+        }
+
+        $this->initializeServices();
+    }
+
+    protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
+    {
+        $this->initializeServices();
+
+        // Map model properties to $this for internal method access
+        $this->id = $model->id;
+        $this->name = $model->name;
+        $this->headline = $model->headline;
+        $this->type = $model->type;
+        $this->cal_calendar = $model->cal_calendar;
+        $this->customTpl = $model->customTpl;
+        $this->caledit_sendMail = $model->caledit_sendMail;
+        $this->caledit_allowPublish = $model->caledit_allowPublish;
+        $this->caledit_mailRecipient = $model->caledit_mailRecipient;
+        $this->caledit_mailSubject = $model->caledit_mailSubject;
+        $this->caledit_usePredefinedCss = $model->caledit_usePredefinedCss;
+        $this->caledit_cssValues = $model->caledit_cssValues;
+        $this->caledit_alternateCSSLabel = $model->caledit_alternateCSSLabel;
+        $this->caledit_template = $model->caledit_template;
+        $this->caledit_delete_template = $model->caledit_delete_template;
+        $this->caledit_clone_template = $model->caledit_clone_template;
+        $this->caledit_allowDelete = $model->caledit_allowDelete;
+        $this->caledit_allowClone = $model->caledit_allowClone;
+        $this->caledit_useDatePicker = $model->caledit_useDatePicker;
+        $this->caledit_mandatoryfields = $model->caledit_mandatoryfields;
+        $this->caledit_dateIncludeCSSTheme = $model->caledit_dateIncludeCSSTheme;
+        $this->caledit_dateDirection = $model->caledit_dateDirection;
+        $this->caledit_dateImage = $model->caledit_dateImage;
+        $this->caledit_dateImageSRC = $model->caledit_dateImageSRC;
+        $this->jumpTo = $model->jumpTo;
+
+        $this->strTemplate = $model->customTpl ?: $this->strTemplate;
+
+        $this->Template = $template;
+
+        // Ensure variables from getResponse argument $template are copied to $this->Template if it was changed
+        if ($this->Template !== $template) {
+            $this->Template->headline = $template->headline;
+            $this->Template->hl = $template->hl;
+            $this->Template->InfoMessage = $template->InfoMessage;
+            $this->Template->FatalError = $template->FatalError;
+            $this->Template->CurrentEventLink = $template->CurrentEventLink;
+            $this->Template->CurrentTitle = $template->CurrentTitle;
+            $this->Template->CurrentDate = $template->CurrentDate;
+            $this->Template->CurrentPublishedInfo = $template->CurrentPublishedInfo;
+        }
+
+        // Map headline and hl to template
+        $headline = StringUtil::deserialize($model->headline);
+        $this->Template->headline = is_array($headline) ? $headline['value'] : $model->headline;
+        $this->Template->hl = $model->hl ?: 'h1';
+        $this->Template->InfoMessage = '';
+        $this->Template->FatalError = '';
+        $this->Template->classList = '';
+        $this->Template->ContentWarning = '';
+        $this->Template->ImageWarning = '';
+        $this->Template->action = $request->getUri();
+        $this->Template->messages = '';
+        $this->Template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_saveData'] ?? 'Submit';
+        $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
+
+        // Deserialisieren und Kalender filtern
+        $this->cal_calendar = $this->sortOutProtected(StringUtil::deserialize($this->cal_calendar));
+
+        if (!is_array($this->cal_calendar) || count($this->cal_calendar) < 1) {
+            return new Response('');
+        }
+
+        $this->allowedCalendars = $this->getCalendars($this->User);
+
+        // Aufruf der eigentlichen Logik, die in handleEdit/handleDelete/handleClone steckt
+        if ($request->query->has('edit') || $request->request->has('edit')) {
+            $editID = $request->query->get('edit') ?: $request->request->get('edit');
+            /** @var CalendarEventsModel $adapter */
+            $adapter = $this->framework->getAdapter(CalendarEventsModel::class);
+            $currentEventObject = $adapter->findByPk($editID);
+            $this->handleEdit($editID, $currentEventObject);
+        } elseif ($request->query->has('delete') || $request->request->has('delete')) {
+            $deleteID = $request->query->get('delete') ?: $request->request->get('delete');
+            /** @var CalendarEventsModel $adapter */
+            $adapter = $this->framework->getAdapter(CalendarEventsModel::class);
+            $currentEventObject = $adapter->findByPk($deleteID);
+            $this->handleDelete($currentEventObject);
+        } elseif ($request->query->has('clone') || $request->request->has('clone')) {
+            $cloneID = $request->query->get('clone') ?: $request->request->get('clone');
+            /** @var CalendarEventsModel $adapter */
+            $adapter = $this->framework->getAdapter(CalendarEventsModel::class);
+            $currentEventObject = $adapter->findByPk($cloneID);
+            $this->handleClone($currentEventObject);
+        } else {
+            // Standardmäßig handleEdit ohne ID (für Neuanlage)
+            $this->handleEdit('', null);
+        }
+
+        return $this->Template->getResponse();
+    }
     /**
      * Template
      *
@@ -45,44 +338,116 @@ class ModuleEventEditor extends Events
     protected string $errorString = '';
     protected array $allowedCalendars = [];
 
-    private ScopeMatcher $scopeMatcher; // Dependency Injection für ScopeMatcher
-    private RequestStack $requestStack; // Dependency Injection für RequestStack
-    private TokenChecker $tokenChecker;
-    private ?CheckAuthService $checkAuthService = null;
-    private Connection $connection;
-    private LoggerInterface $logger;
-
     protected function initializeLogger(): void
     {
-        $this->logger = System::getContainer()->get('monolog.logger.contao.general');
+        // $this->calEditLogger is already injected
     }
 
     protected function initializeServices(): void
     {
-        $container = System::getContainer();
+        if ($this->calEditCheckAuthService instanceof CheckAuthService && $this->framework instanceof ContaoFramework && $this->User instanceof FrontendUser && $this->tokenChecker !== null) {
+            return;
+        }
 
-        $this->checkAuthService = $container->get('caledit.service.auth');
+        $container = System::getContainer();
+        $this->calEditCheckAuthService = $container->get('caledit.service.auth');
+        $this->framework = $container->get('contao.framework');
+        $this->security = $container->get('security.helper');
+        $this->calEditLogger = $container->get('monolog.logger.contao.general');
         $this->scopeMatcher = $container->get('contao.routing.scope_matcher');
         $this->requestStack = $container->get('request_stack');
-        // Hole die Doctrine Connection
+        $this->connection = $container->get('database_connection');
         $this->tokenChecker = $container->get('contao.security.token_checker');
-        $this->connection = $container->get('doctrine')->getConnection();
+
+        $user = $this->security->getUser();
+        if ($user instanceof FrontendUser) {
+            $this->User = $user;
+        }
+    }
+
+    /**
+     * Sort out protected calendars
+     *
+     * @param array $arrCalendars
+     *
+     * @return array
+     */
+    protected function sortOutProtected(array $arrCalendars): array
+    {
+        if (empty($arrCalendars)) {
+            return [];
+        }
+
+        $this->initializeServices();
+        $arrResult = [];
+
+        /** @var CalendarModelEdit $calendarAdapter */
+        $calendarAdapter = $this->framework->getAdapter(CalendarModelEdit::class);
+        $objCalendars = $calendarAdapter->findByIds($arrCalendars);
+
+        if ($objCalendars === null) {
+            return [];
+        }
+
+        foreach ($objCalendars as $objCalendar) {
+            if (!$objCalendar->protected || ($this->User !== null && count(array_intersect(StringUtil::deserialize($objCalendar->groups, true), $this->User->groups)) > 0)) {
+                $arrResult[] = $objCalendar->id;
+            }
+        }
+
+        return $arrResult;
     }
 
     /**
      * generate Module
      */
-    public function generate() : string
+    public function generate(?ModuleModel $model = null): string
     {
         $this->initializeServices();
-        $request = $this->requestStack->getCurrentRequest();
 
-		//if ($request && System::getContainer()->get('contao.routing.scope_matcher')->isBackendRequest($request))
-        if( $this->scopeMatcher->isBackendRequest($request))
-        {
+        if ($model === null) {
+            $model = $this->model;
+        }
+
+        if ($model === null) {
+            return '';
+        }
+
+        // Map model properties to $this for legacy support and PHP 8.2 compatibility
+        $this->id = $model->id;
+        $this->name = $model->name;
+        $this->headline = $model->headline;
+        $this->type = $model->type;
+        $this->cal_calendar = $model->cal_calendar;
+        $this->customTpl = $model->customTpl;
+        $this->caledit_sendMail = $model->caledit_sendMail;
+        $this->caledit_allowPublish = $model->caledit_allowPublish;
+        $this->caledit_mailRecipient = $model->caledit_mailRecipient;
+        $this->caledit_mailSubject = $model->caledit_mailSubject;
+        $this->caledit_usePredefinedCss = $model->caledit_usePredefinedCss;
+        $this->caledit_cssValues = $model->caledit_cssValues;
+        $this->caledit_alternateCSSLabel = $model->caledit_alternateCSSLabel;
+        $this->caledit_template = $model->caledit_template;
+        $this->caledit_delete_template = $model->caledit_delete_template;
+        $this->caledit_clone_template = $model->caledit_clone_template;
+        $this->caledit_allowDelete = $model->caledit_allowDelete;
+        $this->caledit_allowClone = $model->caledit_allowClone;
+        $this->caledit_useDatePicker = $model->caledit_useDatePicker;
+        $this->caledit_mandatoryfields = $model->caledit_mandatoryfields;
+        $this->caledit_dateIncludeCSSTheme = $model->caledit_dateIncludeCSSTheme;
+        $this->caledit_dateDirection = $model->caledit_dateDirection;
+        $this->caledit_dateImage = $model->caledit_dateImage;
+        $this->caledit_dateImageSRC = $model->caledit_dateImageSRC;
+        $this->jumpTo = $model->jumpTo;
+
+        $this->strTemplate = $model->customTpl ?: $this->strTemplate;
+
+        $request = $this->requestStack->getCurrentRequest();
+        if ($this->scopeMatcher->isBackendRequest($request)) {
             $objTemplate = new BackendTemplate('be_wildcard');
             $objTemplate->wildcard = '### EVENT EDITOR ###';
-            $objTemplate->title = $this->headline;
+            $headline = StringUtil::deserialize($this->headline);
+            $objTemplate->title = is_array($headline) ? $headline['value'] : $this->headline;
             $objTemplate->id = $this->id;
             $objTemplate->link = $this->name;
             $objTemplate->href = 'contao/main.php?do=themes&amp;table=tl_module&amp;act=edit&amp;id=' . $this->id;
@@ -96,7 +461,30 @@ class ModuleEventEditor extends Events
             return '';
         }
 
-        return parent::generate();
+        $this->allowedCalendars = $this->getCalendars($this->User);
+
+        // We can't call parent::generate() because it doesn't exist in AbstractFrontendModuleController.
+        // Instead, we call getResponse() which is the modern way, but getResponse returns a Response object.
+        // For legacy calls to generate(), we might need to return the content string.
+
+        $template = new FrontendTemplate($this->strTemplate ?: 'eventEdit_default');
+
+        // Map headline and hl to template
+        $headline = StringUtil::deserialize($model->headline);
+        $template->headline = is_array($headline) ? $headline['value'] : $model->headline;
+        $template->hl = $model->hl ?: 'h1';
+        $template->InfoMessage = '';
+        $template->FatalError = '';
+        $template->classList = '';
+        $template->ContentWarning = '';
+        $template->ImageWarning = '';
+        $template->action = $request->getUri();
+        $template->messages = '';
+        $template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_saveData'] ?? 'Submit';
+
+        $response = $this->getResponse($template, $model, $request);
+
+        return $response->getContent();
     }
 
     public function addTinyMCE($configuration): void
@@ -141,7 +529,7 @@ class ModuleEventEditor extends Events
         } else {
             // fill the Allowed-Calendars-Array with proper calendars
             foreach ($calendarModels as $calendarModel) {
-                if ($this->checkAuthService->isUserAuthorized($calendarModel, $user)) {
+                if ($this->calEditCheckAuthService->isUserAuthorized($calendarModel, $user)) {
                     $calendars[] = $calendarModel;
                 }
             }
@@ -156,7 +544,7 @@ class ModuleEventEditor extends Events
     public function getCalendarObjectFromPID($pid) : ?CalendarModel
     {
         foreach ($this->allowedCalendars as $objCalendar) {
-            if ($pid == $objCalendar->id) {
+            if ($objCalendar->id == $pid) {
                 return $objCalendar;
             }
         }
@@ -170,7 +558,7 @@ class ModuleEventEditor extends Events
         if (NULL === $objCalendar) {
             return false;
         } else {
-            return $this->checkAuthService->isUserAuthorized($objCalendar, $user);
+            return $this->calEditCheckAuthService->isUserAuthorized($objCalendar, $user);
         }
     }
 
@@ -184,18 +572,18 @@ class ModuleEventEditor extends Events
         $tmpEndDate = strtotime($objEnd->__get('value'));
         if ($tmpEndDate === false) $tmpEndDate = null;
 
-        if ((!$objCalendar->caledit_onlyFuture) || $this->checkAuthService->isUserAdmin($objCalendar, $this->User)) {
+        if ((!$objCalendar->caledit_onlyFuture) || $this->calEditCheckAuthService->isUserAdmin($objCalendar, $this->User)) {
             // elapsed events can be edited, or user is an admin
             return true;
         } else {
             // editing elapsed events is denied and user is not an admin
             //$isValid = ($newDate >= time());
-            $isValid = $this->checkAuthService->isDateNotElapsed($tmpStartDate, $tmpEndDate);
+            $isValid = $this->calEditCheckAuthService->isDateNotElapsed($tmpStartDate, $tmpEndDate);
             if (!$isValid) {
-                if (!$tmpEndDate && ($this->checkAuthService->getMidnightTime() > $tmpStartDate)) {
+                if (!$tmpEndDate && ($this->calEditCheckAuthService->getMidnightTime() > $tmpStartDate)) {
                     $objStart->addError($GLOBALS['TL_LANG']['MSC']['caledit_formErrorElapsedDate']);
                 }
-                if ($tmpEndDate && ($this->checkAuthService->getMidnightTime() > $tmpEndDate)) {
+                if ($tmpEndDate && ($this->calEditCheckAuthService->getMidnightTime() > $tmpEndDate)) {
                     $objEnd->addError($GLOBALS['TL_LANG']['MSC']['caledit_formErrorElapsedDate']);
                 }
             }
@@ -210,7 +598,7 @@ class ModuleEventEditor extends Events
             return false;
         }
 
-        if ((!$objCalendar->caledit_onlyFuture) || ($this->checkAuthService->isUserAdmin($objCalendar, $this->User))) {
+        if ((!$objCalendar->caledit_onlyFuture) || ($this->calEditCheckAuthService->isUserAdmin($objCalendar, $this->User))) {
             // elapsed events can be edited, or user is an admin
             return true;
         } else {
@@ -242,23 +630,23 @@ class ModuleEventEditor extends Events
             return false; // Event not found or something else is wrong
         }
 
-        if (!$objCalendar->AllowEdit) {
+        if ($objCalendar->AllowEdit !== '1') {
             $this->errorString = $GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed'] . '(checkUserEditRights)';
             return false;
         }
 
         // check calendar settings
-        if ($this->checkAuthService->isUserAuthorized($objCalendar, $user)) {
+        if ($this->calEditCheckAuthService->isUserAuthorized($objCalendar, $user)) {
             // if the editing is disabled in the BE: Deny editing in the FE
             if ($currentObjectData->disable_editing) {
                 $this->errorString = $GLOBALS['TL_LANG']['MSC']['caledit_DisabledEvent'];
                 return false;
             }
 
-            $userIsAdmin = $this->checkAuthService->isUserAdmin($objCalendar, $user);
+            $userIsAdmin = $this->calEditCheckAuthService->isUserAdmin($objCalendar, $user);
             //if (!$userIsAdmin && ($CurrentObjectData->startTime <= time()) && ($objCalendar->caledit_onlyFuture)){
             if (!$userIsAdmin
-                && (!$this->checkAuthService->isDateNotElapsed($currentObjectData->startTime, $currentObjectData->endTime))
+                && (!$this->calEditCheckAuthService->isDateNotElapsed($currentObjectData->startTime, $currentObjectData->endTime))
                 //($CurrentObjectData->startTime <= time())
                 && ($objCalendar->caledit_onlyFuture)) {
                 $this->errorString = $GLOBALS['TL_LANG']['MSC']['caledit_NoPast'];
@@ -368,6 +756,19 @@ class ModuleEventEditor extends Events
     {
         $this->initializeServices();
 
+        // Map essential template variables from $currentEventObject
+        $this->Template->CurrentTitle = $currentEventObject->title;
+        $this->Template->CurrentDate = Date::parse(Config::get('dateFormat'), $currentEventObject->startDate);
+        $this->Template->CurrentPublished = $currentEventObject->published;
+
+        if ($currentEventObject->published) {
+            $this->Template->CurrentEventLink = '';
+            $this->Template->CurrentPublishedInfo = $GLOBALS['TL_LANG']['MSC']['caledit_publishedEvent'];
+        } else {
+            $this->Template->CurrentEventLink = '';
+            $this->Template->CurrentPublishedInfo = $GLOBALS['TL_LANG']['MSC']['caledit_unpublishedEvent'];
+        }
+
         //$urlGenerator = new UrlGeneratorInterface::class;
         //$urlGenerator = System::getContainer()->get('contao.routing.content_url_generator');
 
@@ -398,16 +799,6 @@ class ModuleEventEditor extends Events
         $this->Template->CurrentDate = Date::parse(Config::get('dateFormat'), $currentEventObject->startDate);
 
         $this->Template->CurrentPublished = $currentEventObject->published;
-
-        if ($currentEventObject->published) {
-            //ToDo: der link muss noch aktualisiert werden
-            //$this->Template->CurrentEventLink = $urlGenerator->generate($currentEventObject->getRelated('pid'),['alias' => $currentEventObject->alias,'context' => 'edit',]);
-            $this->Template->CurrentEventLink = '';
-            $this->Template->CurrentPublishedInfo = $GLOBALS['TL_LANG']['MSC']['caledit_publishedEvent'];
-        } else {
-            $this->Template->CurrentEventLink = '';
-            $this->Template->CurrentPublishedInfo = $GLOBALS['TL_LANG']['MSC']['caledit_unpublishedEvent'];
-        }
     }
 
     public function addDatePicker(&$field): void
@@ -584,12 +975,35 @@ class ModuleEventEditor extends Events
         $this->initializeServices();
         $this->initializeLogger();
 
-        $this->strTemplate = $this->caledit_template;
-
-        $this->Template = new FrontendTemplate($this->strTemplate);
-
         // Input über den Symfony-DI-Container beziehen
         $currentRequest = $this->requestStack->getCurrentRequest();
+
+        // Initialize all template variables to avoid Twig errors
+        $this->Template->deleteRef = '';
+        $this->Template->deleteLabel = '';
+        $this->Template->deleteTitle = '';
+        $this->Template->cloneRef = '';
+        $this->Template->cloneLabel = '';
+        $this->Template->cloneTitle = '';
+        $this->Template->editRef = '';
+        $this->Template->editLabel = '';
+        $this->Template->editTitle = '';
+        $this->Template->CurrentEventLink = '';
+        $this->Template->CurrentTitle = '';
+        $this->Template->CurrentDate = '';
+        $this->Template->CurrentPublishedInfo = '';
+        $this->Template->InfoMessage = '';
+        $this->Template->FatalError = '';
+        $this->Template->classList = '';
+        $this->Template->ContentWarning = '';
+        $this->Template->ImageWarning = '';
+        $this->Template->action = $currentRequest->getUri();
+        $this->Template->messages = '';
+        $this->Template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_saveData'] ?? 'Submit';
+        $headline = StringUtil::deserialize($this->model->headline);
+        $this->Template->headline = is_array($headline) ? $headline['value'] : $this->model->headline;
+        $this->Template->hl = $this->model->hl ?: 'h1';
+        $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
 
         // 1. Get Data from post/get
         $newDate = $currentRequest->query->get('add');
@@ -641,103 +1055,42 @@ class ModuleEventEditor extends Events
 
         // after this: Overwrite it with the post data
         if($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit') {
-            $newEventData['startDate']  = $currentRequest->request->get('startDate');
-            {
-                $this->initializeServices();
 
-                $this->strTemplate = $this->caledit_template;
+            $newEventData['startDate'] = $currentRequest->request->get('startDate');
+            $newEventData['endDate'] = $currentRequest->request->get('endDate');
+            $newEventData['startTime'] = $currentRequest->request->get('startTime');
+            $newEventData['endTime'] = $currentRequest->request->get('endTime');
+            $newEventData['title'] = $currentRequest->request->get('title');
+            $newEventData['location'] = $currentRequest->request->get('location');
+            $newEventData['teaser'] = $currentRequest->request->get('teaser', true);
+            $NewContentData['text'] = $currentRequest->request->get('details', true);
+            $newEventData['cssClass'] = $currentRequest->request->get('cssClass');
+            $newEventData['pid'] = $currentRequest->request->get('pid');
+            $newEventData['published'] = $currentRequest->request->get('published') ? 1 : 0;
+            $saveAs = $currentRequest->request->get('saveAs') ?? 0;
+            $jumpToSelection = $currentRequest->request->get('jumpToSelection');
 
-                $this->Template = new FrontendTemplate($this->strTemplate);
+            if ($published && !$this->caledit_allowPublish) {
+                // this should never happen, except the FE user is manipulating
+                // the POST-Data with some evil HackerToolz ;-)
+                $fatalError = $GLOBALS['TL_LANG']['MSC']['caledit_NoPublishAllowed'] . ' (POST data invalid)';
+                $this->Template->FatalError = $fatalError;
+                return;
+            }
 
-                // Input über den Symfony-DI-Container beziehen
-                $currentRequest = $this->requestStack->getCurrentRequest();
+            if (empty($newEventData['pid'])) {
+                // set default value
+                $newEventData['pid'] = $this->allowedCalendars[0]->id; //['id'];
+            }
 
-                // 1. Get Data from post/get
-                $newDate = $currentRequest->query->get('add');
-
-                $newEventData = [];
-                $NewContentData = [];
-                $newEventData['startDate'] = $newDate;
-
-                $published = $currentEventObject?->published;
-
-                // Abrufen der aktuellen URL
-                $currentUrl = $currentRequest->getUri();
-
-                if ($editID) {
-                    // get a proper Content-Element
-                    $this->getContentElements($editID, $contentID, $NewContentData);
-
-                    // get the rest of the event data
-                    $this->getEventInformation($currentEventObject, $newEventData);
-
-                    if ($this->caledit_allowDelete) {
-                        // add a "Delete this event"-Link
-                        $del = str_replace('?edit=', '?delete=', $currentUrl);
-                        $this->Template->deleteRef = $del;
-                        $this->Template->deleteLabel = $GLOBALS['TL_LANG']['MSC']['caledit_deleteLabel'];
-                        $this->Template->deleteTitle = $GLOBALS['TL_LANG']['MSC']['caledit_deleteTitle'];
-                    }
-
-                    if ($this->caledit_allowClone) {
-                        $cln = str_replace('?edit=', '?clone=', $currentUrl);
-                        $this->Template->cloneRef = $cln;
-                        $this->Template->cloneLabel = $GLOBALS['TL_LANG']['MSC']['caledit_cloneLabel'];
-                        $this->Template->cloneTitle = $GLOBALS['TL_LANG']['MSC']['caledit_cloneTitle'];
-                    }
-
-                    $this->Template->CurrentPublished = $published;
-
-                    if ($published && !$this->caledit_allowPublish) {
-                        // editing a published event with no publish-rights
-                        // will hide the event again
-                        $published = '';
-                    }
-                } else {
-                    $this->Template->CurrentPublishedInfo = $GLOBALS['TL_LANG']['MSC']['caledit_newEvent'];
-                }
-
-                $saveAs = '0';
-                $jumpToSelection = '';
-
-                // after this: Overwrite it with the post data
-                if($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit') {
-
-                    $newEventData['startDate']  = $currentRequest->request->get('startDate');
-                    $newEventData['endDate']    = $currentRequest->request->get('endDate');
-                    $newEventData['startTime']  = $currentRequest->request->get('startTime');
-                    $newEventData['endTime']    = $currentRequest->request->get('endTime');
-                    $newEventData['title']      = $currentRequest->request->get('title');
-                    $newEventData['location']   = $currentRequest->request->get('location');
-                    $newEventData['teaser']     = $currentRequest->request->get('teaser', true);
-                    $NewContentData['text']     = $currentRequest->request->get('details', true);
-                    $newEventData['cssClass']   = $currentRequest->request->get('cssClass');
-                    $newEventData['pid']        = $currentRequest->request->get('pid');
-                    $newEventData['published']  = $currentRequest->request->get('published') ? 1 : 0;
-                    $saveAs                     = $currentRequest->request->get('saveAs') ?? 0;
-                    $jumpToSelection            = $currentRequest->request->get('jumpToSelection');
-
-                    if ($published && !$this->caledit_allowPublish) {
-                        // this should never happen, except the FE user is manipulating
-                        // the POST-Data with some evil HackerToolz ;-)
-                        $fatalError = $GLOBALS['TL_LANG']['MSC']['caledit_NoPublishAllowed'] . ' (POST data invalid)';
-                        $this->Template->FatalError = $fatalError;
-                        return;
-                    }
-
-                    if (empty($newEventData['pid'])) {
-                        // set default value
-                        $newEventData['pid'] = $this->allowedCalendars[0]->id; //['id'];
-                    }
-
-                    if (!$this->UserIsToAddCalendar($this->User, $newEventData['pid'])) {
-                        // this should never happen, except the FE user is manipulating
-                        // the POST with some evil HackerToolz. ;-)
-                        $fatalError = $GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed'] . ' (POST data invalid)';
-                        $this->Template->FatalError = $fatalError;
-                        return;
-                    }
-                }
+            if (!$this->UserIsToAddCalendar($this->User, $newEventData['pid'])) {
+                // this should never happen, except the FE user is manipulating
+                // the POST with some evil HackerToolz. ;-)
+                $fatalError = $GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed'] . ' (POST data invalid)';
+                $this->Template->FatalError = $fatalError;
+                return;
+            }
+        }
 
                 $mandfields = unserialize($this->caledit_mandatoryfields);
                 $mandTeaser = (is_array($mandfields) && array_intersect(array('teaser'), $mandfields));
@@ -1655,6 +2008,33 @@ class ModuleEventEditor extends Events
         $this->strTemplate = $this->caledit_delete_template;
         $this->Template = new FrontendTemplate($this->strTemplate);
 
+        // Initialize all template variables to avoid Twig errors
+        $this->Template->deleteRef = '';
+        $this->Template->deleteLabel = '';
+        $this->Template->deleteTitle = '';
+        $this->Template->cloneRef = '';
+        $this->Template->cloneLabel = '';
+        $this->Template->cloneTitle = '';
+        $this->Template->editRef = '';
+        $this->Template->editLabel = '';
+        $this->Template->editTitle = '';
+        $this->Template->CurrentEventLink = '';
+        $this->Template->CurrentTitle = '';
+        $this->Template->CurrentDate = '';
+        $this->Template->CurrentPublishedInfo = '';
+        $this->Template->InfoMessage = '';
+        $this->Template->FatalError = '';
+        $this->Template->classList = '';
+        $this->Template->ContentWarning = '';
+        $this->Template->ImageWarning = '';
+        $this->Template->action = $currentRequest->getUri();
+        $this->Template->messages = '';
+        $this->Template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_deleteData'] ?? 'Delete';
+        $headline = StringUtil::deserialize($this->model->headline);
+        $this->Template->headline = is_array($headline) ? $headline['value'] : $this->model->headline;
+        $this->Template->hl = $this->model->hl ?: 'h1';
+        $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
+
         if (!$this->caledit_allowDelete) {
             $this->Template->FatalError = $GLOBALS['TL_LANG']['MSC']['caledit_NoDelete'];
             return;
@@ -1672,14 +2052,7 @@ class ModuleEventEditor extends Events
             $this->Template->cloneTitle = $GLOBALS['TL_LANG']['MSC']['caledit_cloneTitle'];
         }
 
-        // Startdatum formatieren
-        $dateFormat = Config::get('dateFormat');
-        $startDate = Date::parse($dateFormat, $currentEventObject->startDate);
-
         // Event-Daten in das Template übergeben
-        $this->Template->CurrentEventLink = $this->generateEventUrl($currentEventObject);
-        $this->Template->CurrentTitle = $currentEventObject->title;
-        $this->Template->CurrentDate = $startDate;
         $this->Template->CurrentPublishedInfo = $currentEventObject->published
             ? $GLOBALS['TL_LANG']['MSC']['caledit_publishedEvent']
             : $GLOBALS['TL_LANG']['MSC']['caledit_unpublishedEvent'];
@@ -1710,7 +2083,7 @@ class ModuleEventEditor extends Events
         // Löschvorgang
         if (!$doNotSubmit && $currentRequest->request->get('FORM_SUBMIT') === 'caledit_submit') {
             $oldEventData = [
-                'startDate' => $startDate,
+                'startDate' => Date::parse(Config::get('dateFormat'), $currentEventObject->startDate),
                 'title' => $currentEventObject->title,
                 'published' => $currentEventObject->published,
             ];
@@ -1755,6 +2128,33 @@ class ModuleEventEditor extends Events
         $this->strTemplate = $this->caledit_clone_template;
         $this->Template = new FrontendTemplate($this->strTemplate);
 
+        // Initialize all template variables to avoid Twig errors
+        $this->Template->deleteRef = '';
+        $this->Template->deleteLabel = '';
+        $this->Template->deleteTitle = '';
+        $this->Template->cloneRef = '';
+        $this->Template->cloneLabel = '';
+        $this->Template->cloneTitle = '';
+        $this->Template->editRef = '';
+        $this->Template->editLabel = '';
+        $this->Template->editTitle = '';
+        $this->Template->CurrentEventLink = '';
+        $this->Template->CurrentTitle = '';
+        $this->Template->CurrentDate = '';
+        $this->Template->CurrentPublishedInfo = '';
+        $this->Template->InfoMessage = '';
+        $this->Template->FatalError = '';
+        $this->Template->classList = '';
+        $this->Template->ContentWarning = '';
+        $this->Template->ImageWarning = '';
+        $this->Template->action = $currentRequest->getUri();
+        $this->Template->messages = '';
+        $this->Template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_saveData'] ?? 'Submit';
+        $headline = StringUtil::deserialize($this->model->headline);
+        $this->Template->headline = is_array($headline) ? $headline['value'] : $this->model->headline;
+        $this->Template->hl = $this->model->hl ?: 'h1';
+        $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
+
         $currentID = $currentEventObject->id;
         $currentEventData = array();
         $currentContentData = array();
@@ -1784,6 +2184,11 @@ class ModuleEventEditor extends Events
         $this->getEventInformation($currentEventObject, $currentEventData);
 
         $this->Template->CloneWarning = $GLOBALS['TL_LANG']['MSC']['caledit_CloneWarning'];
+
+        // Event-Daten in das Template übergeben
+        $this->Template->CurrentPublishedInfo = $currentEventObject->published
+            ? $GLOBALS['TL_LANG']['MSC']['caledit_publishedEvent']
+            : $GLOBALS['TL_LANG']['MSC']['caledit_unpublishedEvent'];
 
         // publishing information
         $published = $currentEventObject->published;
@@ -2087,75 +2492,16 @@ class ModuleEventEditor extends Events
      */
     protected function compile() : void
     {
-        $this->initializeServices();
-        // Add TinyMCE-Stuff to header
-        $this->addTinyMCE($this->caledit_tinMCEtemplate);
+    }
 
-        // Input über den Symfony-DI-Container beziehen
-        $currentRequest = $this->requestStack->getCurrentRequest();
-
-        if ($currentRequest === null) {
-            throw new \RuntimeException('No current request available.');
-        }
-
-        $editID = $currentRequest->query->get('edit');
-
-        $deleteID = $currentRequest->query->get('delete');
-        if ($deleteID) {
-            $editID = $deleteID;
-        }
-
-        $cloneID = $currentRequest->query->get('clone');
-        if ($cloneID) {
-            $editID = $cloneID;
-        }
-
-        $fatalError = false;
-
-        // Instanz des angemeldeten Frontend-Benutzers erhalten
-        $this->User = FrontendUser::getInstance();
-
-        // Kalender abrufen, die für den Benutzer erlaubt sind
-        $this->allowedCalendars = $this->getCalendars($this->User);
-
-        $currentEventObject = null; // Standardwert für den Fall, dass kein Event vorhanden ist
-
-        if (count($this->allowedCalendars) == 0 && $editID) {
-            $fatalError = true;
-            $this->errorString = $GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed'];
-        } else {
-            if (!empty($editID)) {
-                $editID = (int)$editID; // Explizites Casting auf integer
-                $currentEventObject = CalendarEventsModelEdit::findByIdOrAlias($editID);
-
-                // Benutzerrechte prüfen, wenn ein Event vorhanden ist
-                $AuthorizedUser = $this->checkUserEditRights($this->User, $editID, $currentEventObject);
-                if (!$AuthorizedUser) {
-                    // Ein entsprechender Fehlertext wird in der Methode checkUserEditRights gesetzt
-                    $fatalError = true;
-                }
-            }
-        }
-
-        // Fatal error, editing not allowed, abort.
-        if ($fatalError) {
-            $this->strTemplate = $this->caledit_template;
-            $this->Template = new FrontendTemplate($this->strTemplate);
-            $this->Template->FatalError = $this->errorString;
-            return;
-        }
-
-        // ok, the user is an authorized user
-        if ($deleteID) {
-            $this->handleDelete($currentEventObject);
-            return;
-        }
-
-        if ($cloneID) {
-            $this->handleClone($currentEventObject);
-            return;
-        }
-
-        $this->handleEdit($editID, $currentEventObject);
+/**
+ * Import a class
+ *
+ * @param string $strClass
+ */
+protected
+function import($strClass): void
+{
+    $this->$strClass = System::importStatic($strClass);
     }
 }

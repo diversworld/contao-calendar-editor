@@ -97,7 +97,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_mailTemplate'] = array
     'default'                 => 'mail_event_notification',
     'exclude'                 => true,
     'inputType'               => 'select',
-    'options_callback'        => array('calendar_eventeditor', 'getEventMailTemplates'),
+    'options_callback' => array('Diversworld\CalendarEditorBundle\Dca\ModuleDca', 'getEventMailTemplates'),
     'eval'                    => array ('tl_class'=>'clr w50'),
     'sql'					  => "varchar(32) NOT NULL default ''"
 );
@@ -126,7 +126,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_template'] = array
     'default'                 => 'eventEdit_default',
     'exclude' => true,
     'inputType'               => 'select',
-    'options_callback'        => array('calendar_eventeditor', 'getEventEditTemplates'),
+    'options_callback' => array('Diversworld\CalendarEditorBundle\Dca\ModuleDca', 'getEventEditTemplates'),
     'eval'                    => array ('tl_class'=>'clr w50'),
     'sql'					  => "varchar(32) NOT NULL default ''"
 );
@@ -137,7 +137,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_clone_template'] = array
     'default'                 => 'eventEdit_duplicate',
     'exclude' => true,
     'inputType'               => 'select',
-    'options_callback'        => array('calendar_eventeditor', 'getEventEditTemplates'),
+    'options_callback' => array('Diversworld\CalendarEditorBundle\Dca\ModuleDca', 'getEventEditTemplates'),
     'eval'                    => array ('tl_class'=>'w50'),
     'sql'					  => "varchar(32) NOT NULL default ''"
 );
@@ -148,7 +148,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_delete_template'] = array
     'default'                 => 'eventEdit_delete',
     'exclude' => true,
     'inputType'               => 'select',
-    'options_callback'        => array('calendar_eventeditor', 'getEventEditTemplates'),
+    'options_callback' => array('Diversworld\CalendarEditorBundle\Dca\ModuleDca', 'getEventEditTemplates'),
     'eval'                    => array ('tl_class'=>'w50'),
     'sql'					  => "varchar(32) NOT NULL default ''"
 );
@@ -159,7 +159,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_tinMCEtemplate'] = array
     //'default'                 => 'tinyFrontendMinimal',
     'default'                 => 'wuppdi',
     'inputType'               => 'select',
-    'options_callback'        => array('calendar_eventeditor', 'getConfigFiles'),
+    'options_callback' => array('Diversworld\CalendarEditorBundle\Dca\ModuleDca', 'getConfigFiles'),
     'eval'			  		  => array('includeBlankOption'=>true, 'tl_class'=>'w50'),
     'sql'					  => "varchar(32) NOT NULL default ''"
 );
@@ -187,7 +187,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_cssValues'] = array
     'eval'                    => array
     (
         'tl_class' => 'w50',
-        'columnsCallback' => array('calendar_eventeditor', 'getCSSValues')
+        'columnsCallback' => array('Diversworld\CalendarEditorBundle\Dca\ModuleDca', 'getCSSValues')
     ),
     'sql'					  => "text NULL"
 );
@@ -214,7 +214,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['cal_holidayCalendar'] = array
     'label'                   => &$GLOBALS['TL_LANG']['tl_module']['caledit_holidayCalendar'],
     'exclude'                 => true,
     'inputType'               => 'checkbox',
-    'options_callback'        => array('calendar_eventeditor', 'getCalendars'),
+    'options_callback' => array('Diversworld\CalendarEditorBundle\Dca\ModuleDca', 'getCalendars'),
     'eval'                    => array('mandatory'=>false, 'multiple'=>true),
     'sql'                     => "blob NULL"
 );
@@ -277,107 +277,4 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_dateImageSRC'] = array
 //caledit_dateIncludeCSS, caledit_dateIncludeCSSTheme,
 //caledit_dateImage, caledit_dateImageSRC'
 
-class calendar_eventeditor extends Backend 
-{
-    private $security;
-
-    /**
-     * Return all event templates as array
-     * @param object
-     * @return array
-     */
-    public function getEventEditTemplates()
-    {
-        return $this->getTemplateGroup('eventEdit_');
-    }
-    /**
-     * Return all event templates as array
-     * @param object
-     * @return array
-     */
-    public function getEventMailTemplates()
-    {
-        return $this->getTemplateGroup('mail_event_');
-    }
-
-    public function getCSSValues()
-    {
-        $columnFields = null;
-
-        $columnFields = array
-        (
-            'label' => array (
-                'label' => &$GLOBALS['TL_LANG']['tl_module']['css_label'],
-                'mandatory' => true,
-                'default' => null,
-                'inputType' => 'text',
-                'eval' => array('style' => 'width:100px')
-            ),
-            'value' => array (
-                'label' => &$GLOBALS['TL_LANG']['tl_module']['css_value'],
-                'mandatory' => true,
-                'inputType' => 'text',
-                'eval' => array('rgxp' => 'alpha', 'style' => 'width:70px')
-            )
-        );
-        return $columnFields;
-    }
-
-    public function getCalendars()
-    {
-        // Hole den Backend-User
-        $user = BackendUser::getInstance();
-
-                // Sicherheit: Hole den Security-Service bei Bedarf
-        if (null === $this->security) {
-            $this->security = System::getContainer()->get('security.helper');
-        }
-
-        if (!$this->security->isGranted('ROLE_ADMIN') && !is_array($this->User->calendars)) {
-            return [];
-        }
-
-        $arrCalendars = array();
-        $objCalendars = $this->Database->execute("SELECT id, title FROM tl_calendar ORDER BY title");
-
-        while ($objCalendars->next())
-        {
-            if ($user->hasAccess($objCalendars->id, 'calendars'))
-            {
-                $arrCalendars[$objCalendars->id] = $objCalendars->title;
-            }
-        }
-
-        return $arrCalendars;
-    }
-
-    /**
-     * Return a list of tinyMCE config files in this system.
-     * copied from "FormRTE", @copyright  Andreas Schempp 2009
-     */
-    public function getConfigFiles()
-    {
-        $arrConfigs = array();
-
-        // Get the root directory from the Symfony container
-        $rootDir = System::getContainer()->getParameter('kernel.project_dir');
-
-        // Define the path to the tinyMCE configuration files
-        $tinyMCEPath = $rootDir . '/vendor/diversworld/contao-calendar-editor/contao/tinyMCE/';
-
-        // Check if the directory exists
-        if (is_dir($tinyMCEPath)) {
-            // Use scandir to list files in the directory
-            $arrFiles = scandir($tinyMCEPath);
-
-            foreach ($arrFiles as $file) {
-                // Include only files with the .php extension
-                if (pathinfo($file, PATHINFO_EXTENSION) === 'php') {
-                    $arrConfigs[] = basename($file, '.php');
-                }
-            }
-        }
-        return $arrConfigs;
-    }
-}
 

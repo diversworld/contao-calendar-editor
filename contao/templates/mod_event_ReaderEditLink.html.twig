@@ -1,0 +1,26 @@
+<div class="mod_eventreaderEditlink block">
+    {% if headline %}
+    <{{ hl }}>{{ headline }}</{{ hl }}>
+{% endif %}
+
+    {% if editRef %}
+        <ul class="editlinks">
+            <li class="editlink">
+                <a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a>
+            </li>
+            {% if cloneRef %}
+                <li class="clonelink">
+                    <a href="{{ cloneRef }}" title="{{ cloneTitle }}"> {{ cloneLabel }} </a>
+                </li>
+            {% endif %}
+
+            {% if deleteRef %}
+                <li class="deletelink">
+                    <a href="{{ deleteRef }}" title="{{ deleteTitle }}"> {{ deleteLabel }} </a>
+                </li>
+            {% endif %}
+        </ul>
+    {% else %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+</div>

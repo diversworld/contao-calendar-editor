@@ -1,0 +1,70 @@
+<div class="mod_EventEditor block">
+    {% if headline %}
+    <{{ hl }}>{{ headline }}</{{ hl }}>
+{% endif %}
+
+    {{ InfoMessage|raw }}
+<h2>{{ 'MSC.caledit_currentActionDelete'|trans({}, 'contao_default') }}</h2>
+
+<p class="caledit_info">
+    {% if CurrentEventLink %}
+        <span class="date"> {{ CurrentDate }}: </span><span class="title">{{ CurrentTitle }}</span>
+        <span class="caledit_publishinfo"> ({{ CurrentPublishedInfo }}) </span>
+    {% else %}
+        <span class="caledit_publishinfo"> ({{ CurrentPublishedInfo }}) </span>
+    {% endif %}
+</p>
+
+{% if deleteRef or cloneRef or editRef or CurrentEventLink %}
+    <ul class="CalendarEditActionList">
+        {% if CurrentEventLink %}
+            <li class="viewlink"><a href="{{ CurrentEventLink }}"
+                                    title="{{ CurrentTitle }}"> {{ 'MSC.caledit_viewLabel'|trans({}, 'contao_default') }} </a>
+            </li>
+        {% endif %}
+        {% if editRef %}
+            <li class="editlink"><a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a></li>
+        {% endif %}
+        {% if cloneRef %}
+            <li class="clonelink"><a href="{{ cloneRef }}" title="{{ cloneTitle }}"> {{ cloneLabel }} </a></li>
+        {% endif %}
+        {% if deleteRef %}
+            <li class="deletelink"><a href="{{ deleteRef }}" title="{{ deleteTitle }}"> {{ deleteLabel }} </a></li>
+        {% endif %}
+    </ul>
+{% endif %}
+
+    {% if not fields %}
+        <h2>{{ EditHeadline }}</h2>
+        <p class="error">{{ FatalError }}</p>
+    {% else %}
+        <div class="event{{ classList }}">
+            <h2>{{ 'MSC.caledit_ConfirmEventDelete'|trans({}, 'contao_default') }}</h2>
+
+            {% if deleteWarning %}
+                <p class="CalendarEditWarning"> {{ deleteWarning }} </p>
+            {% endif %}
+
+            <div class="formbody">
+                <form action="{{ action }}" method="post">
+                    <input type="hidden" name="FORM_SUBMIT" value="caledit_submit"/>
+                    {{ messages|raw }}
+                    <input type="hidden" name="REQUEST_TOKEN" value="{{ requestToken }}">
+                    <table cellpadding="2" cellspacing="2" border="0">
+                        <tbody>
+                        {% if fields.captcha %}
+                            {% set objWidget = fields.captcha %}
+                            {{ objWidget.parse()|raw }}
+                        {% endif %}
+
+                        <tr>
+                            <td class="label">&nbsp;</td>
+                            <td class="value"><input type="submit" class="submit" value="{{ submit }}"/></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+</div>

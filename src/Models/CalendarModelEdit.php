@@ -12,12 +12,8 @@ class CalendarModelEdit extends CalendarModel
         if (empty($arrIds) || !is_array($arrIds)) {
             return null;
         }
-        $t = static::$strTable;
-        $arrColumns = ["$t.id IN(" . implode(',', array_map('\\intval', $arrIds)) . ")"];
 
-        // Wichtig: Signature von Model::findBy ist findBy(array $columns, mixed $values=null, array $options=array())
-        // Da wir die IDs direkt im Column-Statement verwenden, gibt es keine Values → also null übergeben.
-        return static::findBy($arrColumns, null, $arrOptions);
+        return static::findMultipleByIds($arrIds, $arrOptions);
     }
 
 }

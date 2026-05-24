@@ -2,6 +2,7 @@
 
 namespace Diversworld\CalendarEditorBundle\Controller\Module;
 
+use Contao\ModuleModel;
 use Contao\BackendTemplate;
 use Contao\Date;
 use Contao\FrontendUser;
@@ -19,6 +20,31 @@ use Psr\Log\LoggerInterface;
 
 class ModuleCalendarEdit extends ModuleCalendar
 {
+    /**
+     * @var ModuleModel|null
+     */
+    protected $model;
+
+    /**
+     * @var array|null
+     */
+    protected $cal_calendar;
+
+    /**
+     * @var int|string|null
+     */
+    protected $caledit_add_jumpTo;
+
+    /**
+     * @var array|null
+     */
+    protected $cal_holidayCalendar;
+
+    /**
+     * @var FrontendUser|null
+     */
+    protected $User;
+
 	// variable which indicates whether events can be added or not (on elapsed days)
 	protected bool $allowElapsedEvents;
 	protected bool $allowEditEvents;
@@ -28,14 +54,37 @@ class ModuleCalendarEdit extends ModuleCalendar
     private ?CheckAuthService $checkAuthService = null;
     private LoggerInterface $logger;
 
-    protected function initializeServices( ): void
+    public function __construct(ModuleModel|null $model = null, string $strColumn = 'main')
     {
+        if ($model !== null) {
+            $this->model = $model;
+            parent::__construct($model, $strColumn);
+        }
+        $this->initializeServices();
+    }
+
+    protected function initializeServices(): void
+    {
+        if ($this->model !== null) {
+            foreach ($this->model->row() as $key => $value) {
+                if (property_exists($this, $key)) {
+                    $this->$key = $value;
+                }
+            }
+            // Special handling for serialized fields
+            if (is_string($this->cal_calendar)) {
+                $this->cal_calendar = StringUtil::deserialize($this->cal_calendar, true);
+            }
+            if (is_string($this->cal_holidayCalendar)) {
+                $this->cal_holidayCalendar = StringUtil::deserialize($this->cal_holidayCalendar, true);
+            }
+        }
+
         $container = System::getContainer();
         $this->checkAuthService = $container->get('caledit.service.auth');
         $this->scopeMatcher = $container->get('contao.routing.scope_matcher');
         $this->requestStack = $container->get('request_stack');
         $this->logger = $container->get('monolog.logger.contao.general');
-
     }
 
 	public function getHolidayCalendarIDs($cals): array
@@ -55,14 +104,25 @@ class ModuleCalendarEdit extends ModuleCalendar
     {
         $this->User = FrontendUser::getInstance();
 
+        if (empty($arrCalendars) && !empty($this->cal_calendar)) {
+            $arrCalendars = $this->cal_calendar;
+        }
+
 		$this->allowElapsedEvents = false;
 		$this->allowEditEvents = false;
 
+        if (empty($arrCalendars)) {
+            return;
+        }
+
 		$calendarModels = CalendarModelEdit::findByIds($arrCalendars);
-		foreach($calendarModels as $calendarModel) {
-			$this->allowElapsedEvents = ($this->allowElapsedEvents || $this->checkAuthService->isUserAuthorizedElapsedEvents($calendarModel, $this->User) );
-			$this->allowEditEvents    = ($this->allowEditEvents    || $this->checkAuthService->isUserAuthorized($calendarModel, $this->User) );
-		}
+
+        if ($calendarModels !== null) {
+            foreach ($calendarModels as $calendarModel) {
+                $this->allowElapsedEvents = ($this->allowElapsedEvents || $this->checkAuthService->isUserAuthorizedElapsedEvents($calendarModel, $this->User));
+                $this->allowEditEvents = ($this->allowEditEvents || $this->checkAuthService->isUserAuthorized($calendarModel, $this->User));
+            }
+        }
 	}
 
 	// overwrite the compileWeeks-Method from ModuleCalendar
@@ -173,7 +233,6 @@ class ModuleCalendarEdit extends ModuleCalendar
 			}
 
 			$arrDays[$strWeekClass][$i]['label'] = $intDay;
-
 			if ($this->allowEditEvents && ($this->allowElapsedEvents || ($intKey >= date('Ymd')) )  ){
 				$ts = mktime(8, 0, 0, $intMonth, $intDay, $intYear); // 8:00 at this day
 				$arrDays[$strWeekClass][$i]['addRef'] = $addUrl . '?add=' . Date::parse($dateformat, $ts);
@@ -199,7 +258,8 @@ class ModuleCalendarEdit extends ModuleCalendar
             $objTemplate = new BackendTemplate('be_wildcard');
 
             $objTemplate->wildcard = '### CALENDAR WITH FE EDITING ###';
-            $objTemplate->title = $this->headline;
+            $headline = StringUtil::deserialize($this->headline);
+            $objTemplate->title = is_array($headline) ? $headline['value'] : $this->headline;
             $objTemplate->id = $this->id;
             $objTemplate->link = $this->name;
             $objTemplate->href = 'contao/main.php?do=themes&amp;table=tl_module&amp;act=edit&amp;id=' . $this->id;
