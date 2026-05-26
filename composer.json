@@ -1,7 +1,6 @@
 {
   "name": "diversworld/contao-calendar-editor",
   "description": "Contao Extension to create and edit calendar events in the frontend.",
-  "minimum-stability": "stable",
   "keywords": [
     "contao",
     "events",
