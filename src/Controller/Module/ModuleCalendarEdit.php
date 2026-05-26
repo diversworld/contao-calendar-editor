@@ -245,7 +245,7 @@ class ModuleCalendarEdit extends ModuleCalendar
 			$arrDays[$strWeekClass][$i]['href'] = $this->strLink . '?day=' . $intKey; //$this->strLink
 			$arrDays[$strWeekClass][$i]['title'] = sprintf($GLOBALS['TL_LANG']['MSC']['cal_events'], count($events));
 			$arrDays[$strWeekClass][$i]['events'] = $events;
-			$arrDays[$strWeekClass][$i]['holidayEvents'] = $holidayEvents ?? [];
+            $arrDays[$strWeekClass][$i]['holidayEvents'] = $holidayEvents ?? [];
 
 		}
 		return $arrDays;
