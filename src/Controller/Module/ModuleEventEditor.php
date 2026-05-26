@@ -293,6 +293,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->Template->messages = '';
         $this->Template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_saveData'] ?? 'Submit';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
+        $this->Template->requestTokenName = System::getContainer()->getParameter('contao.csrf_token_name');
 
         // Deserialisieren und Kalender filtern
         $this->cal_calendar = $this->sortOutProtected(StringUtil::deserialize($this->cal_calendar));
@@ -1004,6 +1005,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->Template->headline = is_array($headline) ? $headline['value'] : $this->model->headline;
         $this->Template->hl = $this->model->hl ?: 'h1';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
+        $this->Template->requestTokenName = System::getContainer()->getParameter('contao.csrf_token_name');
 
         // 1. Get Data from post/get
         $newDate = $currentRequest->query->get('add');
@@ -1479,6 +1481,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->Template->headline = is_array($headline) ? $headline['value'] : $this->model->headline;
         $this->Template->hl = $this->model->hl ?: 'h1';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
+        $this->Template->requestTokenName = System::getContainer()->getParameter('contao.csrf_token_name');
 
         if (!$this->caledit_allowDelete) {
             $this->Template->FatalError = $GLOBALS['TL_LANG']['MSC']['caledit_NoDelete'];
@@ -1518,6 +1521,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
                 $doNotSubmit = true;
             }
         }
+        
         $arrWidgets[$captchaField['name']] = $objWidget;
 
         // Template für Delete-Hinweise und -Buttons befüllen
@@ -1599,6 +1603,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->Template->headline = is_array($headline) ? $headline['value'] : $this->model->headline;
         $this->Template->hl = $this->model->hl ?: 'h1';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
+        $this->Template->requestTokenName = System::getContainer()->getParameter('contao.csrf_token_name');
 
         $currentID = $currentEventObject->id;
         $currentEventData = array();

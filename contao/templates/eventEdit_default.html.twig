@@ -56,7 +56,7 @@
                 <form action="{{ action }}" method="post">
                     <input type="hidden" name="FORM_SUBMIT" value="caledit_submit"/>
                     {{ messages|raw }}
-                    <input type="hidden" name="REQUEST_TOKEN" value="{{ requestToken }}">
+                    <input type="hidden" name="{{ requestTokenName }}" value="{{ requestToken }}">
 
                     {% if fields.startDate %}
                         {{ fields.startDate.parse()|raw }}
