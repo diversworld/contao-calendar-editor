@@ -1,26 +1,47 @@
-<div class="mod_eventreaderEditlink block">
-    {% if headline %}
-    <{{ hl }}>{{ headline }}</{{ hl }}>
-{% endif %}
+{% extends "@Contao/frontend_module/_base.html.twig" %}
 
+{% block content %}
+    {{ block('edit_links_container') }}
+{% endblock %}
+
+{% block edit_links_container %}
     {% if editRef %}
-        <ul class="editlinks">
-            <li class="editlink">
-                <a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a>
-            </li>
-            {% if cloneRef %}
-                <li class="clonelink">
-                    <a href="{{ cloneRef }}" title="{{ cloneTitle }}"> {{ cloneLabel }} </a>
-                </li>
-            {% endif %}
-
-            {% if deleteRef %}
-                <li class="deletelink">
-                    <a href="{{ deleteRef }}" title="{{ deleteTitle }}"> {{ deleteLabel }} </a>
-                </li>
-            {% endif %}
-        </ul>
+        {{ block('edit_links_list') }}
     {% else %}
-        <p class="error">{{ error }}</p>
+        {{ block('error_message') }}
     {% endif %}
-</div>
+{% endblock %}
+
+{% block edit_links_list %}
+    <ul class="editlinks">
+        {{ block('edit_link_item') }}
+        {% if cloneRef %}
+            {{ block('clone_link_item') }}
+        {% endif %}
+        {% if deleteRef %}
+            {{ block('delete_link_item') }}
+        {% endif %}
+    </ul>
+{% endblock %}
+
+{% block edit_link_item %}
+    <li class="editlink">
+        <a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a>
+    </li>
+{% endblock %}
+
+{% block clone_link_item %}
+    <li class="clonelink">
+        <a href="{{ cloneRef }}" title="{{ cloneTitle }}"> {{ cloneLabel }} </a>
+    </li>
+{% endblock %}
+
+{% block delete_link_item %}
+    <li class="deletelink">
+        <a href="{{ deleteRef }}" title="{{ deleteTitle }}"> {{ deleteLabel }} </a>
+    </li>
+{% endblock %}
+
+{% block error_message %}
+    <p class="error">{{ error }}</p>
+{% endblock %}

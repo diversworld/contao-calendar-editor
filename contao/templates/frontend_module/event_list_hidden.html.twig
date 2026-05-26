@@ -1,11 +1,30 @@
+{% block event_container %}
 <div class="event layout_upcoming{{ classUpcoming }}">
+    {{ block('event_content') }}
+</div>
+{% endblock %}
+
+{% block event_content %}
     <p>
-        <span class="date">{% if day %}{{ day }}, {% endif %}{{ date }}</span>{% if time %}, <span
-                class="time">{{ time }}</span>{% endif %} <span class="title">{{ title }}</span>
+        {{ block('event_date') }}
+        {{ block('event_title') }}
         {% if editRef %}
-            <span class="editlink">
-                <a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a>
-            </span>
+            {{ block('edit_link') }}
         {% endif %}
     </p>
-</div>
+{% endblock %}
+
+{% block event_date %}
+    <span class="date">{% if day %}{{ day }}, {% endif %}{{ date }}</span>{% if time %}, <span
+        class="time">{{ time }}</span>{% endif %}
+{% endblock %}
+
+{% block event_title %}
+    <span class="title">{{ title }}</span>
+{% endblock %}
+
+{% block edit_link %}
+    <span class="editlink">
+        <a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a>
+    </span>
+{% endblock %}

@@ -1,11 +1,38 @@
+{% block event_container %}
 <div class="event layout_teaser{{ classList }}">
+    {{ block('event_header') }}
+    {{ block('event_title') }}
+
+    {% if time or span %}
+        {{ block('event_time') }}
+    {% endif %}
+
+    {% if location %}
+        {{ block('event_location') }}
+    {% endif %}
+
+    {{ block('event_teaser') }}
+
+    {% if details %}
+        {{ block('read_more') }}
+    {% endif %}
+
+    {% if editRef %}
+        {{ block('edit_link') }}
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block event_header %}
     {% if header %}
         <div class="header{{ classHeader }}">
             <span class="date">{{ firstDate }}</span>{% if firstDay %} <span class="day">
                 ({{ firstDay }})</span>{% endif %}
         </div>
     {% endif %}
+{% endblock %}
 
+{% block event_title %}
     {% if details %}
         <h2><a href="{{ href }}"
                title="{{ title }} ({% if day %}{{ day }}, {% endif %}{{ date }}{% if time %}, {{ time }}{% endif %})"{{ target|raw }}>{{ link }}</a>
@@ -13,25 +40,27 @@
     {% else %}
         <h2>{{ title }}</h2>
     {% endif %}
+{% endblock %}
 
-    {% if time or span %}
-        <p class="time">{{ time }}{{ span }}</p>
-    {% endif %}
+{% block event_time %}
+    <p class="time">{{ time }}{{ span }}</p>
+{% endblock %}
 
-    {% if location %}
-        <p class="location">{{ locationLabel }}: {{ location }}</p>
-    {% endif %}
+{% block event_location %}
+    <p class="location">{{ locationLabel }}: {{ location }}</p>
+{% endblock %}
 
+{% block event_teaser %}
     <div class="teaser">
         {{ teaser|raw }}
     </div>
+{% endblock %}
 
-    {% if details %}
-        <p class="more"><a href="{{ href }}" title="{{ readMore }}"{{ target|raw }}>{{ more }} <span
-                        class="invisible">{{ link }}</span></a></p>
-    {% endif %}
+{% block read_more %}
+    <p class="more"><a href="{{ href }}" title="{{ readMore }}"{{ target|raw }}>{{ more }} <span
+                    class="invisible">{{ link }}</span></a></p>
+{% endblock %}
 
-    {% if editRef %}
-        <p class="editlink"><a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a></p>
-    {% endif %}
-</div>
+{% block edit_link %}
+    <p class="editlink"><a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a></p>
+{% endblock %}

@@ -1,23 +1,43 @@
+{% block event_header %}
 {% if header %}
     <div class="header{{ classHeader }}">
         <time datetime="{{ datetime }}" class="date">{{ firstDate }}</time>{% if firstDay %} <span class="day">
             ({{ firstDay }})</span>{% endif %}
     </div>
 {% endif %}
+{% endblock %}
 
+{% block event_container %}
 <div class="event layout_list{{ classList }}">
+    {{ block('event_title') }}
+
+    {% if time or span %}
+        {{ block('event_time') }}
+    {% endif %}
+
+    {{ block('event_details') }}
+</div>
+{% endblock %}
+
+{% block event_title %}
     <h2><a href="{{ href }}"
            title="{{ title }} ({% if day %}{{ day }}, {% endif %}{{ date }}{% if time %}, {{ time }}{% endif %})"{{ target|raw }}>{{ link }}</a>
     </h2>
+{% endblock %}
 
-    {% if time or span %}
-        <p class="time">{{ time }}{{ span }}</p>
-    {% endif %}
+{% block event_time %}
+    <p class="time">{{ time }}{{ span }}</p>
+{% endblock %}
 
+{% block event_details %}
     <div class="ce_text block">
         {{ details|raw }}
         {% if editRef %}
-            <p class="editlink"><a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a></p>
+            {{ block('edit_link') }}
         {% endif %}
     </div>
-</div>
+{% endblock %}
+
+{% block edit_link %}
+    <p class="editlink"><a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a></p>
+{% endblock %}

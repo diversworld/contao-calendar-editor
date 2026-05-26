@@ -414,78 +414,23 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             return '';
         }
 
-        // Map model properties to $this for legacy support and PHP 8.2 compatibility
-        $this->id = $model->id;
-        $this->name = $model->name;
-        $this->headline = $model->headline;
-        $this->type = $model->type;
-        $this->cal_calendar = $model->cal_calendar;
-        $this->customTpl = $model->customTpl;
-        $this->caledit_sendMail = $model->caledit_sendMail;
-        $this->caledit_allowPublish = $model->caledit_allowPublish;
-        $this->caledit_mailRecipient = $model->caledit_mailRecipient;
-        $this->caledit_mailSubject = $model->caledit_mailSubject;
-        $this->caledit_usePredefinedCss = $model->caledit_usePredefinedCss;
-        $this->caledit_cssValues = $model->caledit_cssValues;
-        $this->caledit_alternateCSSLabel = $model->caledit_alternateCSSLabel;
-        $this->caledit_template = $model->caledit_template;
-        $this->caledit_delete_template = $model->caledit_delete_template;
-        $this->caledit_clone_template = $model->caledit_clone_template;
-        $this->caledit_allowDelete = $model->caledit_allowDelete;
-        $this->caledit_allowClone = $model->caledit_allowClone;
-        $this->caledit_useDatePicker = $model->caledit_useDatePicker;
-        $this->caledit_mandatoryfields = $model->caledit_mandatoryfields;
-        $this->caledit_dateIncludeCSSTheme = $model->caledit_dateIncludeCSSTheme;
-        $this->caledit_dateDirection = $model->caledit_dateDirection;
-        $this->caledit_dateImage = $model->caledit_dateImage;
-        $this->caledit_dateImageSRC = $model->caledit_dateImageSRC;
-        $this->jumpTo = $model->jumpTo;
-
-        $this->strTemplate = $model->customTpl ?: $this->strTemplate;
-
         $request = $this->requestStack->getCurrentRequest();
-        if ($this->scopeMatcher->isBackendRequest($request)) {
+
+        if ($request && $this->scopeMatcher->isBackendRequest($request)) {
             $objTemplate = new BackendTemplate('be_wildcard');
             $objTemplate->wildcard = '### EVENT EDITOR ###';
-            $headline = StringUtil::deserialize($this->headline);
-            $objTemplate->title = is_array($headline) ? $headline['value'] : $this->headline;
-            $objTemplate->id = $this->id;
-            $objTemplate->link = $this->name;
-            $objTemplate->href = 'contao/main.php?do=themes&amp;table=tl_module&amp;act=edit&amp;id=' . $this->id;
+            $headline = StringUtil::deserialize($model->headline);
+            $objTemplate->title = is_array($headline) ? $headline['value'] : $model->headline;
+            $objTemplate->id = $model->id;
+            $objTemplate->link = $model->name;
+            $objTemplate->href = 'contao/main.php?do=themes&amp;table=tl_module&amp;act=edit&amp;id=' . $model->id;
+
             return $objTemplate->parse();
         }
 
-        $this->cal_calendar = $this->sortOutProtected(StringUtil::deserialize($this->cal_calendar));
-
-        // Return if there are no calendars
-        if (!is_array($this->cal_calendar) || count($this->cal_calendar) < 1) {
-            return '';
-        }
-
-        $this->allowedCalendars = $this->getCalendars($this->User);
-
-        // We can't call parent::generate() because it doesn't exist in AbstractFrontendModuleController.
-        // Instead, we call getResponse() which is the modern way, but getResponse returns a Response object.
-        // For legacy calls to generate(), we might need to return the content string.
-
-        $template = new FrontendTemplate($this->strTemplate ?: 'eventEdit_default');
-
-        // Map headline and hl to template
-        $headline = StringUtil::deserialize($model->headline);
-        $template->headline = is_array($headline) ? $headline['value'] : $model->headline;
-        $template->hl = $model->hl ?: 'h1';
-        $template->InfoMessage = '';
-        $template->FatalError = '';
-        $template->classList = '';
-        $template->ContentWarning = '';
-        $template->ImageWarning = '';
-        $template->action = $request->getUri();
-        $template->messages = '';
-        $template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_saveData'] ?? 'Submit';
-
-        $response = $this->getResponse($template, $model, $request);
-
-        return $response->getContent();
+        // Return empty string in frontend to prevent type conflicts with getResponse()
+        // when generate() is called by legacy methods.
+        return '';
     }
 
     public function addTinyMCE($configuration): void
