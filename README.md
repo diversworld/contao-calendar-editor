@@ -85,10 +85,12 @@ This module should then be added to the article on the editor page you selected 
 
 If a user is authorized to edit events, he or she should be provided with some links to click on to edit these events. To update an existing website you should
 
-* Change the templates of Calendar modules to "cal_default_edit" (edit this templates to see how it works). 
+* Change the templates of Calendar modules to "frontend_module/cal_default_edit" (edit this templates to see how it
+  works).
 * If you want to use the "add event" links, you have to replace the Calendar module with the Calendar FE module. This module adds also "add event" links for every day, which are used in the cal_default_edit template.
 * Change the templates of Eventlist modules to one of the "\_edit" templates (edit these templates to see how it works). 
-* On the page with an event reader, you may also add a module of type "Event reader: Edit link"
+* On the page with an event reader, you may also add a module of type "Event reader: Edit link" (template
+  `frontend_module/mod_event_ReaderEditLink.html.twig`)
 
 Note that an "edit link" is only added to the template, if the user is actually authorized to edit this event. If the current FE user is not authorized to edit an event, he or she should not see the link. If the user enters such an unauthorized edit-link in the address bar of the browser, the editing form should show an error message.
 
@@ -99,8 +101,11 @@ This module supports editing of events even for not registered users. In this ca
 Now it works like this:
 
 * By default the captcha is included (for non registered users), but extended with the built-in honeypot system from Contao. Therefore it is *not* shown to most users, but your calendar should still be protected against spam bots. If the user has disabled Javascript for your site, the captcha is shown.
-* If the honeypot does not work for you, and you get a lot of spam entries, you can try to use the new editor template `eventEdit_ForceCaptcha.html5`. That way the captcha is always shown, but it may lead to a duplicate captcha field on the form in case the user answers it wrong, or Javascript is disabled.
-* You can modify the captcha field by editing the template `form_captcha_calendar-editor.html5` so it matches your modified editor template.
+* If the honeypot does not work for you, and you get a lot of spam entries, you can try to use the new editor template
+  `frontend_module/eventEdit_ForceCaptcha.html.twig`. That way the captcha is always shown, but it may lead to a
+  duplicate captcha field on the form in case the user answers it wrong, or Javascript is disabled.
+* You can modify the captcha field by editing the template `frontend_module/form_captcha_calendar-editor.html.twig` so
+  it matches your modified editor template.
 * The Delete-Event template always present a captcha, even to registered users to prevent unintended deleting of events. On this form, it may also happen that the captcha field is duplicated.
 
 ## Donation

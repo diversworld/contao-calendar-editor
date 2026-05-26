@@ -64,8 +64,7 @@
                             <a href="{{ event.href }}"
                                title="{{ event.title }} ({% if event.day %}{{ event.day }}, {% endif %}{{ event.date }}{% if event.time %}, {{ event.time }}{% endif %})"{{ event.target|raw }}>{{ event.link }}</a>
                             {% if event.editRef is defined and event.editRef %}
-                                <a href="{{ event.editRef }}" title="{{ event.editTitle }}"> {{ event.editLabel }}
-                                    [+] </a>
+                                <a href="{{ event.editRef }}" title="{{ event.editTitle }}"> {{ event.editLabel }}</a>
                             {% endif %}
                         </div>
                     {% endfor %}
