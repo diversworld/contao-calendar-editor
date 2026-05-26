@@ -10,6 +10,8 @@ use Contao\FrontendUser;
 use Contao\ModuleModel;
 use Contao\PageModel;
 use Contao\StringUtil;
+use Contao\Template;
+use Contao\System;
 use Contao\CoreBundle\Twig\FragmentTemplate;
 use Diversworld\CalendarEditorBundle\Models\CalendarModelEdit;
 use Diversworld\CalendarEditorBundle\Services\CheckAuthService;
@@ -17,7 +19,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bundle\SecurityBundle\Security;
 
-#[AsFrontendModule(category: 'calendar', template: 'mod_event_ReaderEditLink')]
+#[AsFrontendModule('EventReaderEditLink', category: 'calendar', template: 'frontend_module/mod_event_ReaderEditLink')]
 class ModuleEventReaderEdit extends AbstractFrontendModuleController
 {
     /**
@@ -26,41 +28,14 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
     protected $model;
 
     public function __construct(
-        private CheckAuthService|ModuleModel|null $checkAuthService = null,
-        private ContaoFramework|string|null       $framework = null,
-        private ?Security                         $security = null,
-        ModuleModel|null                          $model = null,
+        private readonly CheckAuthService $checkAuthService,
+        private readonly ContaoFramework  $framework,
+        private readonly Security         $security,
     )
     {
-        if ($this->checkAuthService instanceof ModuleModel) {
-            $model = $this->checkAuthService;
-            $this->checkAuthService = null;
-        }
-
-        if (is_string($this->framework)) {
-            $this->framework = null;
-        }
-
-        if ($model !== null) {
-            $this->model = $model;
-        }
-
-        $this->initializeServices();
     }
 
-    protected function initializeServices(): void
-    {
-        if ($this->checkAuthService instanceof CheckAuthService && $this->framework instanceof ContaoFramework) {
-            return;
-        }
-
-        $container = System::getContainer();
-        $this->checkAuthService = $container->get('caledit.service.auth');
-        $this->framework = $container->get('contao.framework');
-        $this->security = $container->get('security.helper');
-    }
-
-    protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
+    protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
     {
         // Return if no event has been specified
         if (!$request->query->has('auto_item') && !($request->attributes->has('_route_params') && isset($request->attributes->get('_route_params')['auto_item']))) {

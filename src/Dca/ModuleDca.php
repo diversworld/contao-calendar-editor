@@ -2,32 +2,65 @@
 
 namespace Diversworld\CalendarEditorBundle\Dca;
 
-use Contao\Backend;
 use Contao\BackendUser;
+use Contao\CalendarModel;
+use Contao\Controller;
+use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\CoreBundle\Framework\ContaoFramework;
+use Diversworld\CalendarEditorBundle\Services\CheckAuthService;
 use Symfony\Bundle\SecurityBundle\Security;
 
-class ModuleDca extends Backend
+class ModuleDca
 {
     public function __construct(
-        private readonly ContaoFramework $framework,
-        private readonly Security        $security,
-        private readonly string          $projectDir,
+        private readonly ContaoFramework  $framework,
+        private readonly Security         $security,
+        private readonly CheckAuthService $checkAuthService,
+        private readonly string           $projectDir,
     )
     {
-        parent::__construct();
     }
 
+    #[AsCallback(table: 'tl_module', target: 'fields.caledit_template.options')]
+    #[AsCallback(table: 'tl_module', target: 'fields.caledit_clone_template.options')]
+    #[AsCallback(table: 'tl_module', target: 'fields.caledit_delete_template.options')]
     public function getEventEditTemplates(): array
     {
-        return $this->getTemplateGroup('eventEdit_');
+        return $this->getTwigTemplates('eventEdit_');
     }
 
+    #[AsCallback(table: 'tl_module', target: 'fields.caledit_mailTemplate.options')]
     public function getEventMailTemplates(): array
     {
-        return $this->getTemplateGroup('mail_event_');
+        return $this->getTwigTemplates('mail_event_');
     }
 
+    #[AsCallback(table: 'tl_module', target: 'fields.cal_template.options')]
+    public function getCalendarTemplates(): array
+    {
+        return $this->getTwigTemplates('cal_');
+    }
+
+    private function getTwigTemplates(string $prefix): array
+    {
+        $templates = $this->framework->getAdapter(Controller::class)->getTemplateGroup($prefix);
+        $templateDir = dirname(__DIR__, 2) . '/contao/templates/frontend_module';
+
+        if (is_dir($templateDir)) {
+            $files = scandir($templateDir);
+            foreach ($files as $file) {
+                if (str_starts_with($file, $prefix) && str_ends_with($file, '.html.twig')) {
+                    $name = substr($file, 0, -10);
+                    $key = 'frontend_module/' . $name;
+                    $templates[$key] = $name;
+                }
+            }
+        }
+
+        return $templates;
+    }
+
+    #[AsCallback(table: 'tl_module', target: 'fields.caledit_cssValues.eval.columnsCallback')]
     public function getCSSValues(): array
     {
         return [
@@ -46,6 +79,7 @@ class ModuleDca extends Backend
         ];
     }
 
+    #[AsCallback(table: 'tl_module', target: 'fields.cal_holidayCalendar.options')]
     public function getCalendars(): array
     {
         $user = $this->security->getUser();
@@ -59,17 +93,22 @@ class ModuleDca extends Backend
         }
 
         $arrCalendars = [];
-        $objCalendars = $this->Database->execute("SELECT id, title FROM tl_calendar ORDER BY title");
+        $objCalendars = $this->framework->getAdapter(CalendarModel::class)->findAll(['order' => 'title']);
 
-        while ($objCalendars->next()) {
-            if ($user->hasAccess($objCalendars->id, 'calendars')) {
-                $arrCalendars[$objCalendars->id] = $objCalendars->title;
+        if (null === $objCalendars) {
+            return [];
+        }
+
+        foreach ($objCalendars as $calendar) {
+            if ($this->security->isGranted('ROLE_ADMIN') || $user->hasAccess($calendar->id, 'calendars')) {
+                $arrCalendars[$calendar->id] = $calendar->title;
             }
         }
 
         return $arrCalendars;
     }
 
+    #[AsCallback(table: 'tl_module', target: 'fields.caledit_tinMCEtemplate.options')]
     public function getConfigFiles(): array
     {
         $arrConfigs = [];

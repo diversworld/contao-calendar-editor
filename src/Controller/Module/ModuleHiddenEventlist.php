@@ -8,9 +8,10 @@ use Contao\CoreBundle\Controller\FrontendModule\AbstractFrontendModuleController
 use Contao\CoreBundle\DependencyInjection\Attribute\AsFrontendModule;
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\ModuleModel;
+use Contao\PageModel;
 use Contao\StringUtil;
+use Contao\Template;
 use Contao\System;
-use Contao\CoreBundle\Twig\FragmentTemplate;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Psr\Log\LoggerInterface;
@@ -56,27 +57,15 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
         $this->logger = $container->get('monolog.logger.contao.general');
     }
 
-    public function generate(): string
-    {
-        if (System::getContainer()->get('contao.routing.scope_matcher')->isBackendRequest(System::getContainer()->get('request_stack')->getCurrentRequest())) {
-            $objTemplate = new \Contao\BackendTemplate('be_wildcard');
-            $objTemplate->wildcard = '### ' . $GLOBALS['TL_LANG']['FMD']['EventHiddenList'][0] . ' ###';
-            $objTemplate->title = $this->model->headline;
-            $objTemplate->id = $this->model->id;
-            $objTemplate->link = $this->model->name;
-            $objTemplate->href = 'contao/main.php?do=themes&amp;table=tl_module&amp;act=edit&amp;id=' . $this->model->id;
-
-            return $objTemplate->parse();
-        }
-
-        return '';
-    }
-
-    protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
+    protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
     {
         $headline = StringUtil::deserialize($model->headline);
         $template->headline = is_array($headline) ? $headline['value'] : $model->headline;
         $template->hl = $model->hl ?: 'h1';
+
+        // This is a simplified version, ideally we would use the logic from ModuleEventlist
+        // and just filter for unpublished events.
+        // For now, let's keep it as is and just make it a valid Contao 6 controller.
 
         $calendars = StringUtil::deserialize($model->cal_calendar);
 
@@ -84,6 +73,24 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
             return new Response('');
         }
 
+        // We could theoretically instantiate the original ModuleEventlist here or reimplement it.
+        // Since we want Contao 6 compatibility, we should aim for a clean implementation.
+
         return $template->getResponse();
+    }
+
+    public static function findCurrentUnPublishedByPid(int $pid, int $start, int $end, array $options = [])
+    {
+        $t = 'tl_calendar_events';
+        $start = intval($start);
+        $end = intval($end);
+
+        $arrColumns = array("$t.pid=? AND $t.published!='1' AND (($t.startTime>=$start AND $t.startTime<=$end) OR ($t.endTime>=$start AND $t.endTime<=$end) OR ($t.startTime<=$start AND $t.endTime>=$end) OR ($t.recurring='1' AND ($t.recurrences=0 OR $t.repeatEnd>=$start) AND $t.startTime<=$end))");
+
+        if (!isset($options['order'])) {
+            $options['order'] = "$t.startTime";
+        }
+
+        return CalendarEventsModel::findBy($arrColumns, $pid, $options);
     }
 }

@@ -8,52 +8,56 @@
 {% endblock %}
 
 {% block info_message %}
-    {{ InfoMessage|raw }}
+    {{ InfoMessage|default('')|raw }}
 {% endblock %}
 
 {% block current_action %}
     <h2>{{ 'MSC.caledit_currentActionDelete'|trans({}, 'contao_default') }}</h2>
 
     <p class="caledit_info">
-        {% if CurrentEventLink %}
-            <span class="date"> {{ CurrentDate }}: </span><span class="title">{{ CurrentTitle }}</span>
-            <span class="caledit_publishinfo"> ({{ CurrentPublishedInfo }}) </span>
+        {% if CurrentEventLink is defined and CurrentEventLink %}
+            <span class="date"> {{ CurrentDate|default('') }}: </span><span
+                class="title">{{ CurrentTitle|default('') }}</span>
+            <span class="caledit_publishinfo"> ({{ CurrentPublishedInfo|default('') }}) </span>
         {% else %}
-            <span class="caledit_publishinfo"> ({{ CurrentPublishedInfo }}) </span>
+            <span class="caledit_publishinfo"> ({{ CurrentPublishedInfo|default('') }}) </span>
         {% endif %}
     </p>
 {% endblock %}
 
 {% block action_list %}
-    {% if deleteRef or cloneRef or editRef or CurrentEventLink %}
+    {% if (deleteRef is defined and deleteRef) or (cloneRef is defined and cloneRef) or (editRef is defined and editRef) or (CurrentEventLink is defined and CurrentEventLink) %}
         <ul class="CalendarEditActionList">
-            {% if CurrentEventLink %}
+            {% if CurrentEventLink is defined and CurrentEventLink %}
                 <li class="viewlink"><a href="{{ CurrentEventLink }}"
-                                        title="{{ CurrentTitle }}"> {{ 'MSC.caledit_viewLabel'|trans({}, 'contao_default') }} </a>
+                                        title="{{ CurrentTitle|default('') }}"> {{ 'MSC.caledit_viewLabel'|trans({}, 'contao_default') }} </a>
                 </li>
             {% endif %}
-            {% if editRef %}
-                <li class="editlink"><a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a></li>
+            {% if editRef is defined and editRef %}
+                <li class="editlink"><a href="{{ editRef }}"
+                                        title="{{ editTitle|default('') }}"> {{ editLabel|default('') }} </a></li>
             {% endif %}
-            {% if cloneRef %}
-                <li class="clonelink"><a href="{{ cloneRef }}" title="{{ cloneTitle }}"> {{ cloneLabel }} </a></li>
+            {% if cloneRef is defined and cloneRef %}
+                <li class="clonelink"><a href="{{ cloneRef }}"
+                                         title="{{ cloneTitle|default('') }}"> {{ cloneLabel|default('') }} </a></li>
             {% endif %}
-            {% if deleteRef %}
-                <li class="deletelink"><a href="{{ deleteRef }}" title="{{ deleteTitle }}"> {{ deleteLabel }} </a></li>
+            {% if deleteRef is defined and deleteRef %}
+                <li class="deletelink"><a href="{{ deleteRef }}"
+                                          title="{{ deleteTitle|default('') }}"> {{ deleteLabel|default('') }} </a></li>
             {% endif %}
         </ul>
     {% endif %}
 {% endblock %}
 
 {% block form_container %}
-    {% if not fields %}
-        <h2>{{ EditHeadline }}</h2>
-        <p class="error">{{ FatalError }}</p>
+    {% if fields is not defined or not fields %}
+        <h2>{{ EditHeadline|default('') }}</h2>
+        <p class="error">{{ FatalError|default('') }}</p>
     {% else %}
-        <div class="event{{ classList }}">
+        <div class="event{{ classList|default('') }}">
             <h2>{{ 'MSC.caledit_ConfirmEventDelete'|trans({}, 'contao_default') }}</h2>
 
-            {% if deleteWarning %}
+            {% if deleteWarning is defined and deleteWarning %}
                 <p class="CalendarEditWarning"> {{ deleteWarning }} </p>
             {% endif %}
 
@@ -65,10 +69,10 @@
 {% endblock %}
 
 {% block event_form %}
-    <form action="{{ action }}" method="post">
+    <form action="{{ action|default('') }}" method="post">
         <input type="hidden" name="FORM_SUBMIT" value="caledit_submit"/>
-        {{ messages|raw }}
-        <input type="hidden" name="REQUEST_TOKEN" value="{{ requestToken }}">
+        {{ messages|default('')|raw }}
+        <input type="hidden" name="REQUEST_TOKEN" value="{{ requestToken|default('') }}">
 
         <table cellpadding="2" cellspacing="2" border="0">
             <tbody>
@@ -80,7 +84,7 @@
 {% endblock %}
 
 {% block event_fields %}
-    {% if fields.captcha %}
+    {% if fields.captcha is defined and fields.captcha %}
         {% set objWidget = fields.captcha %}
         {{ objWidget.parse()|raw }}
     {% endif %}
@@ -89,6 +93,6 @@
 {% block submit_container %}
     <tr>
         <td class="label">&nbsp;</td>
-        <td class="value"><input type="submit" class="submit" value="{{ submit }}"/></td>
+        <td class="value"><input type="submit" class="submit" value="{{ submit|default('') }}"/></td>
     </tr>
 {% endblock %}

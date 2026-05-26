@@ -1,33 +1,15 @@
-{% block event_container %}
 <div class="event layout_upcoming{{ classUpcoming }}">
-    {{ block('event_date') }}
-    {{ block('event_link') }}
+    <span class="date">{{ date }}</span>
+    <a href="{{ href }}"
+       title="{{ title }} ({% if day %}{{ day }}, {% endif %}{{ date }}{% if time %}, {{ time }}{% endif %})"{{ target|raw }}>{{ link }}</a>
 
     {% if time %}
-        {{ block('event_time') }}
+        <span class="time">({{ time }})</span>
     {% endif %}
 
     {% if editRef %}
-        {{ block('edit_link') }}
+        <span class="editlink">
+            <a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a>
+        </span>
     {% endif %}
 </div>
-{% endblock %}
-
-{% block event_date %}
-    <span class="date">{{ date }}</span>
-{% endblock %}
-
-{% block event_link %}
-    <a href="{{ href }}"
-       title="{{ title }} ({% if day %}{{ day }}, {% endif %}{{ date }}{% if time %}, {{ time }}{% endif %})"{{ target|raw }}>{{ link }}</a>
-{% endblock %}
-
-{% block event_time %}
-    <span class="time">({{ time }})</span>
-{% endblock %}
-
-{% block edit_link %}
-    <span class="editlink">
-        <a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a>
-    </span>
-{% endblock %}

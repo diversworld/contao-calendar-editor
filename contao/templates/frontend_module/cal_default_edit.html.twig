@@ -1,20 +1,5 @@
-{% block calendar %}
 <table class="calendar">
     <thead>
-    {{ block('calendar_header') }}
-    </thead>
-    <tbody>
-    {{ block('calendar_body') }}
-    </tbody>
-</table>
-{% endblock %}
-
-{% block calendar_header %}
-    {{ block('calendar_navigation') }}
-    {{ block('calendar_labels') }}
-{% endblock %}
-
-{% block calendar_navigation %}
     <tr>
         <th colspan="2" class="head previous">
             {% if prevHref %}
@@ -32,76 +17,61 @@
             {% endif %}
         </th>
     </tr>
-{% endblock %}
-
-{% block calendar_labels %}
     <tr>
         {% for day in days %}
             <th class="label{{ day.class }}">{{ day.name }}</th>
         {% endfor %}
     </tr>
-{% endblock %}
-
-{% block calendar_body %}
+    </thead>
+    <tbody>
     {% for class, week in weeks %}
         <tr class="{{ class }}">
             {% for day in week %}
                 <td class="{{ day.class }}">
-                    {{ block('calendar_day') }}
+                    <div class="header">
+                        {{ day.label|raw }}
+
+                        {% if day.holidayEvents is defined and day.holidayEvents %}
+                            {% set finalTitle = '' %}
+                            {% set finalEditRef = '' %}
+                            {% set finalEditTitle = '' %}
+                            {% set finalClass = '' %}
+                            {% set finalParent = '' %}
+
+                            {% for event in day.holidayEvents %}
+                                {% set finalTitle = event.title %}
+                                {% set finalEditRef = event.editRef %}
+                                {% set finalEditTitle = event.editTitle %}
+                                {% set finalClass = event.class %}
+                                {% set finalParent = event.parent %}
+                            {% endfor %}
+
+                            <span class="event cal_{{ finalParent }}{{ finalClass }}">
+                                {% if finalEditRef %}
+                                    <a href="{{ finalEditRef }}" title="{{ finalEditTitle }}">{{ finalTitle }}</a>
+                                {% else %}
+                                    {{ finalTitle }}
+                                {% endif %}
+                            </span>
+                        {% endif %}
+
+                        {% if day.addRef is defined and day.addRef %}
+                            <a href="{{ day.addRef }}" title="{{ day.addTitle }}"> {{ day.addLabel }}  </a>
+                        {% endif %}
+                    </div>
+                    {% for event in day.events %}
+                        <div class="event cal_{{ event.parent }}{{ event.class }}">
+                            <a href="{{ event.href }}"
+                               title="{{ event.title }} ({% if event.day %}{{ event.day }}, {% endif %}{{ event.date }}{% if event.time %}, {{ event.time }}{% endif %})"{{ event.target|raw }}>{{ event.link }}</a>
+                            {% if event.editRef is defined and event.editRef %}
+                                <a href="{{ event.editRef }}" title="{{ event.editTitle }}"> {{ event.editLabel }}
+                                    [+] </a>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
                 </td>
             {% endfor %}
         </tr>
     {% endfor %}
-{% endblock %}
-
-{% block calendar_day %}
-    <div class="header">
-        {{ day.label|raw }}
-
-        {{ block('calendar_holidays') }}
-
-        {% if day.addRef is defined and day.addRef %}
-            <a href="{{ day.addRef }}" title="{{ day.addTitle }}"> {{ day.addLabel }}  </a>
-        {% endif %}
-    </div>
-    {{ block('calendar_events') }}
-{% endblock %}
-
-{% block calendar_holidays %}
-    {% if day.holidayEvents is defined and day.holidayEvents %}
-        {% set finalTitle = '' %}
-        {% set finalEditRef = '' %}
-        {% set finalEditTitle = '' %}
-        {% set finalClass = '' %}
-        {% set finalParent = '' %}
-
-        {% for event in day.holidayEvents %}
-            {% set finalTitle = event.title %}
-            {% set finalEditRef = event.editRef %}
-            {% set finalEditTitle = event.editTitle %}
-            {% set finalClass = event.class %}
-            {% set finalParent = event.parent %}
-        {% endfor %}
-
-        <span class="event cal_{{ finalParent }}{{ finalClass }}">
-            {% if finalEditRef %}
-                <a href="{{ finalEditRef }}" title="{{ finalEditTitle }}">{{ finalTitle }}</a>
-            {% else %}
-                {{ finalTitle }}
-            {% endif %}
-        </span>
-    {% endif %}
-{% endblock %}
-
-{% block calendar_events %}
-    {% for event in day.events %}
-        <div class="event cal_{{ event.parent }}{{ event.class }}">
-            <a href="{{ event.href }}"
-               title="{{ event.title }} ({% if event.day %}{{ event.day }}, {% endif %}{{ event.date }}{% if event.time %}, {{ event.time }}{% endif %})"{{ event.target|raw }}>{{ event.link }}</a>
-            {% if event.editRef is defined and event.editRef %}
-                <a href="{{ event.editRef }}" title="{{ event.editTitle }}"> {{ event.editLabel }}
-                    [+] </a>
-            {% endif %}
-        </div>
-    {% endfor %}
-{% endblock %}
+    </tbody>
+</table>

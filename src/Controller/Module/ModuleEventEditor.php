@@ -8,6 +8,7 @@ use Contao\CalendarModel;
 use Contao\Config;
 use Contao\ContentModel;
 use Contao\CoreBundle\Controller\FrontendModule\AbstractFrontendModuleController;
+use Contao\CoreBundle\Twig\FragmentTemplate;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsFrontendModule;
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\CoreBundle\Routing\ScopeMatcher;
@@ -25,7 +26,7 @@ use Contao\ModuleModel;
 use Contao\PageModel;
 use Contao\StringUtil;
 use Contao\System;
-use Contao\CoreBundle\Twig\FragmentTemplate;
+use Contao\Template;
 use Diversworld\CalendarEditorBundle\Models\CalendarModelEdit;
 use Diversworld\CalendarEditorBundle\Services\CheckAuthService;
 use Doctrine\DBAL\Connection;
@@ -37,7 +38,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Psr\Log\LoggerInterface;
 
-#[AsFrontendModule(category: 'calendar', template: 'eventEdit_default')]
+#[AsFrontendModule(category: 'calendar', template: 'frontend_module/eventEdit_default')]
 class ModuleEventEditor extends AbstractFrontendModuleController
 {
     /**
@@ -233,7 +234,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->initializeServices();
     }
 
-    protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
+    protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
     {
         $this->initializeServices();
 
@@ -293,7 +294,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->Template->messages = '';
         $this->Template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_saveData'] ?? 'Submit';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
-        $this->Template->requestTokenName = System::getContainer()->getParameter('contao.csrf_token_name');
 
         // Deserialisieren und Kalender filtern
         $this->cal_calendar = $this->sortOutProtected(StringUtil::deserialize($this->cal_calendar));
@@ -335,7 +335,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
      *
      * @var string
      */
-    protected $strTemplate = 'eventEdit_default';
+    protected $strTemplate = 'frontend_module/eventEdit_default';
     protected string $errorString = '';
     protected array $allowedCalendars = [];
 
@@ -414,23 +414,78 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             return '';
         }
 
-        $request = $this->requestStack->getCurrentRequest();
+        // Map model properties to $this for legacy support and PHP 8.2 compatibility
+        $this->id = $model->id;
+        $this->name = $model->name;
+        $this->headline = $model->headline;
+        $this->type = $model->type;
+        $this->cal_calendar = $model->cal_calendar;
+        $this->customTpl = $model->customTpl;
+        $this->caledit_sendMail = $model->caledit_sendMail;
+        $this->caledit_allowPublish = $model->caledit_allowPublish;
+        $this->caledit_mailRecipient = $model->caledit_mailRecipient;
+        $this->caledit_mailSubject = $model->caledit_mailSubject;
+        $this->caledit_usePredefinedCss = $model->caledit_usePredefinedCss;
+        $this->caledit_cssValues = $model->caledit_cssValues;
+        $this->caledit_alternateCSSLabel = $model->caledit_alternateCSSLabel;
+        $this->caledit_template = $model->caledit_template;
+        $this->caledit_delete_template = $model->caledit_delete_template;
+        $this->caledit_clone_template = $model->caledit_clone_template;
+        $this->caledit_allowDelete = $model->caledit_allowDelete;
+        $this->caledit_allowClone = $model->caledit_allowClone;
+        $this->caledit_useDatePicker = $model->caledit_useDatePicker;
+        $this->caledit_mandatoryfields = $model->caledit_mandatoryfields;
+        $this->caledit_dateIncludeCSSTheme = $model->caledit_dateIncludeCSSTheme;
+        $this->caledit_dateDirection = $model->caledit_dateDirection;
+        $this->caledit_dateImage = $model->caledit_dateImage;
+        $this->caledit_dateImageSRC = $model->caledit_dateImageSRC;
+        $this->jumpTo = $model->jumpTo;
 
-        if ($request && $this->scopeMatcher->isBackendRequest($request)) {
+        $this->strTemplate = $model->customTpl ?: $this->strTemplate;
+
+        $request = $this->requestStack->getCurrentRequest();
+        if ($this->scopeMatcher->isBackendRequest($request)) {
             $objTemplate = new BackendTemplate('be_wildcard');
             $objTemplate->wildcard = '### EVENT EDITOR ###';
-            $headline = StringUtil::deserialize($model->headline);
-            $objTemplate->title = is_array($headline) ? $headline['value'] : $model->headline;
-            $objTemplate->id = $model->id;
-            $objTemplate->link = $model->name;
-            $objTemplate->href = 'contao/main.php?do=themes&amp;table=tl_module&amp;act=edit&amp;id=' . $model->id;
-
+            $headline = StringUtil::deserialize($this->headline);
+            $objTemplate->title = is_array($headline) ? $headline['value'] : $this->headline;
+            $objTemplate->id = $this->id;
+            $objTemplate->link = $this->name;
+            $objTemplate->href = 'contao/main.php?do=themes&amp;table=tl_module&amp;act=edit&amp;id=' . $this->id;
             return $objTemplate->parse();
         }
 
-        // Return empty string in frontend to prevent type conflicts with getResponse()
-        // when generate() is called by legacy methods.
-        return '';
+        $this->cal_calendar = $this->sortOutProtected(StringUtil::deserialize($this->cal_calendar));
+
+        // Return if there are no calendars
+        if (!is_array($this->cal_calendar) || count($this->cal_calendar) < 1) {
+            return '';
+        }
+
+        $this->allowedCalendars = $this->getCalendars($this->User);
+
+        // We can't call parent::generate() because it doesn't exist in AbstractFrontendModuleController.
+        // Instead, we call getResponse() which is the modern way, but getResponse returns a Response object.
+        // For legacy calls to generate(), we might need to return the content string.
+
+        $template = new FrontendTemplate($this->strTemplate ?: 'frontend_module/eventEdit_default');
+
+        // Map headline and hl to template
+        $headline = StringUtil::deserialize($model->headline);
+        $template->headline = is_array($headline) ? $headline['value'] : $model->headline;
+        $template->hl = $model->hl ?: 'h1';
+        $template->InfoMessage = '';
+        $template->FatalError = '';
+        $template->classList = '';
+        $template->ContentWarning = '';
+        $template->ImageWarning = '';
+        $template->action = $request->getUri();
+        $template->messages = '';
+        $template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_saveData'] ?? 'Submit';
+
+        $response = $this->getResponse($template, $model, $request);
+
+        return $response->getContent();
     }
 
     public function addTinyMCE($configuration): void
@@ -925,6 +980,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $currentRequest = $this->requestStack->getCurrentRequest();
 
         // Initialize all template variables to avoid Twig errors
+        $this->Template->fields = [];
         $this->Template->deleteRef = '';
         $this->Template->deleteLabel = '';
         $this->Template->deleteTitle = '';
@@ -950,7 +1006,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->Template->headline = is_array($headline) ? $headline['value'] : $this->model->headline;
         $this->Template->hl = $this->model->hl ?: 'h1';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
-        $this->Template->requestTokenName = System::getContainer()->getParameter('contao.csrf_token_name');
 
         // 1. Get Data from post/get
         $newDate = $currentRequest->query->get('add');
@@ -1397,10 +1452,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
         $currentRequest = $this->requestStack->getCurrentRequest();
 
-        $this->strTemplate = $this->caledit_delete_template;
+        $this->strTemplate = $this->caledit_delete_template ?: 'frontend_module/eventEdit_delete';
         $this->Template = new FrontendTemplate($this->strTemplate);
 
         // Initialize all template variables to avoid Twig errors
+        $this->Template->fields = [];
         $this->Template->deleteRef = '';
         $this->Template->deleteLabel = '';
         $this->Template->deleteTitle = '';
@@ -1426,7 +1482,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->Template->headline = is_array($headline) ? $headline['value'] : $this->model->headline;
         $this->Template->hl = $this->model->hl ?: 'h1';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
-        $this->Template->requestTokenName = System::getContainer()->getParameter('contao.csrf_token_name');
 
         if (!$this->caledit_allowDelete) {
             $this->Template->FatalError = $GLOBALS['TL_LANG']['MSC']['caledit_NoDelete'];
@@ -1519,10 +1574,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->initializeServices();
         $currentRequest = $this->requestStack->getCurrentRequest();
 
-        $this->strTemplate = $this->caledit_clone_template;
+        $this->strTemplate = $this->caledit_clone_template ?: 'frontend_module/eventEdit_duplicate';
         $this->Template = new FrontendTemplate($this->strTemplate);
 
         // Initialize all template variables to avoid Twig errors
+        $this->Template->fields = [];
         $this->Template->deleteRef = '';
         $this->Template->deleteLabel = '';
         $this->Template->deleteTitle = '';
@@ -1548,7 +1604,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->Template->headline = is_array($headline) ? $headline['value'] : $this->model->headline;
         $this->Template->hl = $this->model->hl ?: 'h1';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
-        $this->Template->requestTokenName = System::getContainer()->getParameter('contao.csrf_token_name');
 
         $currentID = $currentEventObject->id;
         $currentEventData = array();

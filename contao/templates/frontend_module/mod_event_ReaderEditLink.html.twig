@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block edit_links_container %}
-    {% if editRef %}
+    {% if editRef is defined and editRef %}
         {{ block('edit_links_list') }}
     {% else %}
         {{ block('error_message') }}
@@ -15,10 +15,10 @@
 {% block edit_links_list %}
     <ul class="editlinks">
         {{ block('edit_link_item') }}
-        {% if cloneRef %}
+        {% if cloneRef is defined and cloneRef %}
             {{ block('clone_link_item') }}
         {% endif %}
-        {% if deleteRef %}
+        {% if deleteRef is defined and deleteRef %}
             {{ block('delete_link_item') }}
         {% endif %}
     </ul>
@@ -26,22 +26,22 @@
 
 {% block edit_link_item %}
     <li class="editlink">
-        <a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a>
+        <a href="{{ editRef|default('') }}" title="{{ editTitle|default('') }}"> {{ editLabel|default('') }} </a>
     </li>
 {% endblock %}
 
 {% block clone_link_item %}
     <li class="clonelink">
-        <a href="{{ cloneRef }}" title="{{ cloneTitle }}"> {{ cloneLabel }} </a>
+        <a href="{{ cloneRef|default('') }}" title="{{ cloneTitle|default('') }}"> {{ cloneLabel|default('') }} </a>
     </li>
 {% endblock %}
 
 {% block delete_link_item %}
     <li class="deletelink">
-        <a href="{{ deleteRef }}" title="{{ deleteTitle }}"> {{ deleteLabel }} </a>
+        <a href="{{ deleteRef|default('') }}" title="{{ deleteTitle|default('') }}"> {{ deleteLabel|default('') }} </a>
     </li>
 {% endblock %}
 
 {% block error_message %}
-    <p class="error">{{ error }}</p>
+    <p class="error">{{ error|default('') }}</p>
 {% endblock %}

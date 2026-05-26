@@ -1,24 +1,24 @@
-Subject: Thekendienst im Thekendienstkalender auf {{ host }} eingetragen
+Subject: Thekendienst im Thekendienstkalender auf {{ host|default('') }} eingetragen
 
-{% if hasFrontendUser %}
-Benutzer: {{ user }}
+{% if hasFrontendUser is defined and hasFrontendUser %}
+    Benutzer: {{ user|default('') }}
 {% else %}
 Ein nicht registrierter Benutzer hat die Änderungen vorgenommen.
 {% endif %}
 
-Titel: {{ title }}
-Startdatum: {{ startDate }}
-Enddatum: {{ endDate }}
-Startzeit: {{startTime }}
-Endzeit: {{ endTime }}
+Titel: {{ title|default('') }}
+Startdatum: {{ startDate|default('') }}
+Enddatum: {{ endDate|default('') }}
+Startzeit: {{ startTime|default('') }}
+Endzeit: {{ endTime|default('') }}
 
-{% if published %}
+{% if published is defined and published %}
 Das Event ist veröffentlicht.
 {% else %}
 Das Event ist nicht veröffentlicht.
 {% endif %}
 
-{% if not allowPublish %}
+{% if allowPublish is defined and not allowPublish %}
 Bitte beachten Sie, dass die Veröffentlichung manuell durch einen Administrator erfolgen muss.
 {% endif %}
 

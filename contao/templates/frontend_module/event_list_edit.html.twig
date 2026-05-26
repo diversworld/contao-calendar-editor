@@ -1,17 +1,19 @@
 {% block event_header %}
-{% if header %}
-    <div class="header{{ classHeader }}">
-        <time datetime="{{ datetime }}" class="date">{{ firstDate }}</time>{% if firstDay %} <span class="day">
+    {% if header is defined and header %}
+        <div class="header{{ classHeader|default('') }}">
+            <time datetime="{{ datetime|default('') }}"
+                  class="date">{{ firstDate|default('') }}</time>{% if firstDay is defined and firstDay %} <span
+                    class="day">
             ({{ firstDay }})</span>{% endif %}
     </div>
 {% endif %}
 {% endblock %}
 
 {% block event_container %}
-<div class="event layout_list{{ classList }}">
+    <div class="event layout_list{{ classList|default('') }}">
     {{ block('event_title') }}
 
-    {% if time or span %}
+        {% if (time is defined and time) or (span is defined and span) %}
         {{ block('event_time') }}
     {% endif %}
 
@@ -20,24 +22,25 @@
 {% endblock %}
 
 {% block event_title %}
-    <h2><a href="{{ href }}"
-           title="{{ title }} ({% if day %}{{ day }}, {% endif %}{{ date }}{% if time %}, {{ time }}{% endif %})"{{ target|raw }}>{{ link }}</a>
+    <h2><a href="{{ href|default('') }}"
+           title="{{ title|default('') }} ({% if day is defined and day %}{{ day }}, {% endif %}{{ date|default('') }}{% if time is defined and time %}, {{ time }}{% endif %})"{{ target|default('')|raw }}>{{ link|default('') }}</a>
     </h2>
 {% endblock %}
 
 {% block event_time %}
-    <p class="time">{{ time }}{{ span }}</p>
+    <p class="time">{{ time|default('') }}{{ span|default('') }}</p>
 {% endblock %}
 
 {% block event_details %}
     <div class="ce_text block">
-        {{ details|raw }}
-        {% if editRef %}
+        {{ details|default('')|raw }}
+        {% if editRef is defined and editRef %}
             {{ block('edit_link') }}
         {% endif %}
     </div>
 {% endblock %}
 
 {% block edit_link %}
-    <p class="editlink"><a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a></p>
+    <p class="editlink"><a href="{{ editRef|default('') }}"
+                           title="{{ editTitle|default('') }}"> {{ editLabel|default('') }} </a></p>
 {% endblock %}
