@@ -1521,7 +1521,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
                 $doNotSubmit = true;
             }
         }
-        
+
         $arrWidgets[$captchaField['name']] = $objWidget;
 
         // Template für Delete-Hinweise und -Buttons befüllen

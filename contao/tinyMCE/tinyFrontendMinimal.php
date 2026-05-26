@@ -32,7 +32,7 @@ if ($GLOBALS['TL_CONFIG']['useRTE']): ?>
 	selector:'textarea#ctrl_details, textarea#ctrl_teaser',
 	menubar : false,
 	language : "<?php echo $this->language; ?>",
-    license_key: 'gpl',
+        license_key: 'gpl',
 	plugins : 'link, table, paste',
 	toolbar1: "link unlink | undo redo | bold italic underline | bullist numlist | removeformat",
 	resize: true,

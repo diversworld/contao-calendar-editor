@@ -31,7 +31,7 @@ if ($GLOBALS['TL_CONFIG']['useRTE']): ?>
 <script>tinymce.init({
 	selector:'textarea#ctrl_details, textarea#ctrl_teaser',
 	language : "<?php echo $this->language; ?>",
-    license_key: 'gpl',
+        license_key: 'gpl',
 	plugins : 'link, table, paste, charmap',
 	menu : {
         edit   : {title : 'Edit'  , items : 'undo redo | cut copy paste pastetext | selectall'},
