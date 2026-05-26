@@ -13,7 +13,7 @@ class CalendarModelEdit extends CalendarModel
             return null;
         }
 
-        return static::findMultipleByIds($arrIds, $arrOptions);
+        return static::findBy(['tl_calendar.id IN (' . implode(',', array_map('intval', $arrIds)) . ')'], null, $arrOptions);
     }
 
 }

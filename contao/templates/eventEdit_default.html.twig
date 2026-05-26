@@ -1,41 +1,41 @@
 <div class="mod_EventEditor block">
     {% if headline %}
-    <{{ hl }}>{{ headline }}</{{ hl }}>
-{% endif %}
-
-<p class="error">
-    {{ InfoMessage }}
-</p>
-
-<h2>{{ 'MSC.caledit_currentActionEdit'|trans({}, 'contao_default') }}</h2>
-
-<p class="caledit_info">
-    {% if CurrentEventLink %}
-        <span class="date"> {{ CurrentDate }}: </span><span class="title">{{ CurrentTitle }}</span>
-        <span class="caledit_publishinfo"> ({{ CurrentPublishedInfo }}) </span>
-    {% else %}
-        <span class="caledit_publishinfo"> ({{ CurrentPublishedInfo }}) </span>
+        <{{ hl }}>{{ headline }}</{{ hl }}>
     {% endif %}
-</p>
 
-{% if deleteRef or cloneRef or editRef or CurrentEventLink %}
-    <ul class="CalendarEditActionList">
+    <p class="error">
+        {{ InfoMessage }}
+    </p>
+
+    <h2>{{ 'MSC.caledit_currentActionEdit'|trans({}, 'contao_default') }}</h2>
+
+    <p class="caledit_info">
         {% if CurrentEventLink %}
-            <li class="viewlink"><a href="{{ CurrentEventLink }}"
-                                    title="{{ CurrentTitle }}"> {{ 'MSC.caledit_viewLabel'|trans({}, 'contao_default') }} </a>
-            </li>
+            <span class="date"> {{ CurrentDate }}: </span><span class="title">{{ CurrentTitle }}</span>
+            <span class="caledit_publishinfo"> ({{ CurrentPublishedInfo }}) </span>
+        {% else %}
+            <span class="caledit_publishinfo"> ({{ CurrentPublishedInfo }}) </span>
         {% endif %}
-        {% if editRef %}
-            <li class="editlink"><a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a></li>
-        {% endif %}
-        {% if cloneRef %}
-            <li class="clonelink"><a href="{{ cloneRef }}" title="{{ cloneTitle }}"> {{ cloneLabel }} </a></li>
-        {% endif %}
-        {% if deleteRef %}
-            <li class="deletelink"><a href="{{ deleteRef }}" title="{{ deleteTitle }}"> {{ deleteLabel }} </a></li>
-        {% endif %}
-    </ul>
-{% endif %}
+    </p>
+
+    {% if deleteRef or cloneRef or editRef or CurrentEventLink %}
+        <ul class="CalendarEditActionList">
+            {% if CurrentEventLink %}
+                <li class="viewlink"><a href="{{ CurrentEventLink }}"
+                                        title="{{ CurrentTitle }}"> {{ 'MSC.caledit_viewLabel'|trans({}, 'contao_default') }} </a>
+                </li>
+            {% endif %}
+            {% if editRef %}
+                <li class="editlink"><a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a></li>
+            {% endif %}
+            {% if cloneRef %}
+                <li class="clonelink"><a href="{{ cloneRef }}" title="{{ cloneTitle }}"> {{ cloneLabel }} </a></li>
+            {% endif %}
+            {% if deleteRef %}
+                <li class="deletelink"><a href="{{ deleteRef }}" title="{{ deleteTitle }}"> {{ deleteLabel }} </a></li>
+            {% endif %}
+        </ul>
+    {% endif %}
 
     {% if not fields %}
         <h2>{{ 'MSC.caledit_InsertEventData'|trans({}, 'contao_default') }}</h2>
@@ -122,3 +122,4 @@
         </div>
     {% endif %}
 </div>
+
