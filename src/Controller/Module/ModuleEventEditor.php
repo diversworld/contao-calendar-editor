@@ -1299,7 +1299,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
                 'label'       => $cssLabel,
                 'inputType'   => 'select',
                 'options'     => $opt,
-                'value'       => $newEventData['cssClass'] ?? '',
+                'value' => $newEventData['cssClass'] ?? '',
                 'reference'   => $ref,
                 'eval'        => [
                     'mandatory'          => $mandCss,
