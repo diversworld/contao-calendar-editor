@@ -178,6 +178,7 @@ class ModuleCalendarEdit extends ModuleCalendar
 				$arrDays[$strWeekClass][$i]['label'] = '&nbsp;';
 				$arrDays[$strWeekClass][$i]['class'] = 'days empty' . $strClass ;
 				$arrDays[$strWeekClass][$i]['events'] = array();
+                $arrDays[$strWeekClass][$i]['holidayEvents'] = array();
 
 				continue;
 			}
@@ -202,6 +203,7 @@ class ModuleCalendarEdit extends ModuleCalendar
                     //$arrDays[$strWeekClass][$i]['editRef'] = $addUrl . '?edit=' . $allEvents[$intKey]['id'];
 				}
 				$arrDays[$strWeekClass][$i]['events'] = [];
+                $arrDays[$strWeekClass][$i]['holidayEvents'] = [];
 				continue;
 			}
 
@@ -243,7 +245,7 @@ class ModuleCalendarEdit extends ModuleCalendar
 			$arrDays[$strWeekClass][$i]['href'] = $this->strLink . '?day=' . $intKey; //$this->strLink
 			$arrDays[$strWeekClass][$i]['title'] = sprintf($GLOBALS['TL_LANG']['MSC']['cal_events'], count($events));
 			$arrDays[$strWeekClass][$i]['events'] = $events;
-			$arrDays[$strWeekClass][$i]['holidayEvents'] = $holidayEvents;
+			$arrDays[$strWeekClass][$i]['holidayEvents'] = $holidayEvents ?? [];
 
 		}
 		return $arrDays;

@@ -11,6 +11,7 @@ use Contao\ModuleModel;
 use Contao\PageModel;
 use Contao\StringUtil;
 use Contao\Template;
+use Contao\System;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Psr\Log\LoggerInterface;
@@ -54,6 +55,22 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
         $container = System::getContainer();
         $this->framework = $container->get('contao.framework');
         $this->logger = $container->get('monolog.logger.contao.general');
+    }
+
+    public function generate(): string
+    {
+        if (System::getContainer()->get('contao.routing.scope_matcher')->isBackendRequest(System::getContainer()->get('request_stack')->getCurrentRequest())) {
+            $objTemplate = new \Contao\BackendTemplate('be_wildcard');
+            $objTemplate->wildcard = '### ' . $GLOBALS['TL_LANG']['FMD']['EventHiddenList'][0] . ' ###';
+            $objTemplate->title = $this->model->headline;
+            $objTemplate->id = $this->model->id;
+            $objTemplate->link = $this->model->name;
+            $objTemplate->href = 'contao/main.php?do=themes&amp;table=tl_module&amp;act=edit&amp;id=' . $this->model->id;
+
+            return $objTemplate->parse();
+        }
+
+        return parent::generate();
     }
 
     protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
