@@ -233,7 +233,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->initializeServices();
     }
 
-    protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
+    protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
     {
         $this->initializeServices();
 
@@ -443,7 +443,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->strTemplate = $model->customTpl ?: $this->strTemplate;
 
         $request = $this->requestStack->getCurrentRequest();
-        if ($this->scopeMatcher->isBackendRequest($request)) {
+        if ($request && $this->scopeMatcher->isBackendRequest($request)) {
             $objTemplate = new BackendTemplate('be_wildcard');
             $objTemplate->wildcard = '### EVENT EDITOR ###';
             $headline = StringUtil::deserialize($this->headline);
@@ -461,30 +461,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             return '';
         }
 
-        $this->allowedCalendars = $this->getCalendars($this->User);
-
-        // We can't call parent::generate() because it doesn't exist in AbstractFrontendModuleController.
-        // Instead, we call getResponse() which is the modern way, but getResponse returns a Response object.
-        // For legacy calls to generate(), we might need to return the content string.
-
-        $template = new FrontendTemplate($this->strTemplate ?: 'frontend_module/eventEdit_default');
-
-        // Map headline and hl to template
-        $headline = StringUtil::deserialize($model->headline);
-        $template->headline = is_array($headline) ? $headline['value'] : $model->headline;
-        $template->hl = $model->hl ?: 'h1';
-        $template->InfoMessage = '';
-        $template->FatalError = '';
-        $template->classList = '';
-        $template->ContentWarning = '';
-        $template->ImageWarning = '';
-        $template->action = $request->getUri();
-        $template->messages = '';
-        $template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_saveData'] ?? 'Submit';
-
-        $response = $this->getResponse($template, $model, $request);
-
-        return $response->getContent();
+        return System::getContainer()->get('contao.fragment.handler')->render($model)->getContent();
     }
 
     public function addTinyMCE($configuration): void
@@ -1452,7 +1429,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $currentRequest = $this->requestStack->getCurrentRequest();
 
         $this->strTemplate = $this->caledit_delete_template ?: 'frontend_module/eventEdit_delete';
-        $this->Template = new FrontendTemplate($this->strTemplate);
+        $this->Template->setName($this->strTemplate);
 
         // Initialize all template variables to avoid Twig errors
         $this->Template->fields = [];
@@ -1574,7 +1551,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $currentRequest = $this->requestStack->getCurrentRequest();
 
         $this->strTemplate = $this->caledit_clone_template ?: 'frontend_module/eventEdit_duplicate';
-        $this->Template = new FrontendTemplate($this->strTemplate);
+        $this->Template->setName($this->strTemplate);
 
         // Initialize all template variables to avoid Twig errors
         $this->Template->fields = [];
@@ -1902,29 +1879,21 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             //$notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectNew'], $host);
         }
 
-        // Template laden
-        $template = new FrontendTemplate($templateName);
-
-        // Daten an das Template übergeben
-        $template->host = $host;
-        $template->hasFrontendUser = $hasFrontendUser;
-        $template->user = $User;
-        $template->startDate = $NewEventData['startDate'];
-        $NewEventData['endDate'] = $NewEventData['endDate'] ?? ''; // Standardwert setzen, wenn "endDate" undefined ist
-        $template->endDate = $NewEventData['endDate'];
-        $NewEventData['startTime'] = $NewEventData['startTime'] ?? ''; // Standardwert setzen, wenn "startTime" undefined ist
-        $template->startTime = $NewEventData['startTime'];
-        $NewEventData['endTime'] = $NewEventData['endTime'] ?? '';
-        $template->endTime = $NewEventData['endTime'];
-        $NewEventData['title'] = $NewEventData['title'] ?? 'x';
-        $template->title = $NewEventData['title'];
-        $NewEventData['published'] = $NewEventData['published'] ?? '0';
-        $template->published = $NewEventData['published'];
-        $template->cloneDates = $cloneDates;
-        $template->allowPublish = $this->caledit_allowPublish;
-
-        // Den generierten Text aus dem Template holen
-        $templateContent = $template->parse();
+        // Template laden und rendern
+        $templatePath = 'frontend_module/' . $templateName . '.html.twig';
+        $templateContent = System::getContainer()->get('twig')->render($templatePath, [
+            'host' => $host,
+            'hasFrontendUser' => $hasFrontendUser,
+            'user' => $User,
+            'startDate' => $NewEventData['startDate'],
+            'endDate' => $NewEventData['endDate'] ?? '',
+            'startTime' => $NewEventData['startTime'] ?? '',
+            'endTime' => $NewEventData['endTime'] ?? '',
+            'title' => $NewEventData['title'] ?? 'x',
+            'published' => $NewEventData['published'] ?? '0',
+            'cloneDates' => $cloneDates,
+            'allowPublish' => $this->caledit_allowPublish,
+        ]);
         $notification->text = $templateContent;
 
         // Empfänger aufteilen
