@@ -59,13 +59,13 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
 
     protected function initializeServices(): void
     {
-        if ($this->framework instanceof ContaoFramework && $this->container !== null) {
+        if ($this->framework instanceof ContaoFramework && isset($this->container)) {
             return;
         }
 
         $container = System::getContainer();
 
-        if ($this->container === null) {
+        if (!isset($this->container)) {
             $this->setContainer($container);
         }
 

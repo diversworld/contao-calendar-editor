@@ -345,13 +345,13 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
     protected function initializeServices(): void
     {
-        if ($this->calEditCheckAuthService instanceof CheckAuthService && $this->framework instanceof ContaoFramework && $this->User instanceof FrontendUser && $this->tokenChecker !== null && $this->container !== null) {
+        if ($this->calEditCheckAuthService instanceof CheckAuthService && $this->framework instanceof ContaoFramework && $this->User instanceof FrontendUser && $this->tokenChecker !== null && isset($this->container)) {
             return;
         }
 
         $container = System::getContainer();
 
-        if ($this->container === null) {
+        if (!isset($this->container)) {
             $this->setContainer($container);
         }
 
