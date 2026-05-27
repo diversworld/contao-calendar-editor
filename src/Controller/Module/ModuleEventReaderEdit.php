@@ -76,6 +76,8 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
 
     protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
     {
+        $this->model = $model;
+
         // Return if no event has been specified
         if (!$request->query->has('auto_item') && !($request->attributes->has('_route_params') && isset($request->attributes->get('_route_params')['auto_item']))) {
             return new Response('');

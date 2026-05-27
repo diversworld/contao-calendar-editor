@@ -70,6 +70,8 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
 
     protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
     {
+        $this->model = $model;
+
         $headline = StringUtil::deserialize($model->headline);
         $template->headline = is_array($headline) ? $headline['value'] : $model->headline;
         $template->hl = $model->hl ?: 'h1';

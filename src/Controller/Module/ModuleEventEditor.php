@@ -236,6 +236,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
     protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
     {
         $this->initializeServices();
+        $this->model = $model;
 
         // Map model properties to $this for internal method access
         $this->id = $model->id;
@@ -303,28 +304,33 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
         $this->allowedCalendars = $this->getCalendars($this->User);
 
-        // Aufruf der eigentlichen Logik, die in handleEdit/handleDelete/handleClone steckt
+        $response = null;
+
         if ($request->query->has('edit') || $request->request->has('edit')) {
             $editID = $request->query->get('edit') ?: $request->request->get('edit');
             /** @var CalendarEventsModel $adapter */
             $adapter = $this->framework->getAdapter(CalendarEventsModel::class);
             $currentEventObject = $adapter->findByPk($editID);
-            $this->handleEdit($editID, $currentEventObject);
+            $response = $this->handleEdit($editID, $currentEventObject);
         } elseif ($request->query->has('delete') || $request->request->has('delete')) {
             $deleteID = $request->query->get('delete') ?: $request->request->get('delete');
             /** @var CalendarEventsModel $adapter */
             $adapter = $this->framework->getAdapter(CalendarEventsModel::class);
             $currentEventObject = $adapter->findByPk($deleteID);
-            $this->handleDelete($currentEventObject);
+            $response = $this->handleDelete($currentEventObject);
         } elseif ($request->query->has('clone') || $request->request->has('clone')) {
             $cloneID = $request->query->get('clone') ?: $request->request->get('clone');
             /** @var CalendarEventsModel $adapter */
             $adapter = $this->framework->getAdapter(CalendarEventsModel::class);
             $currentEventObject = $adapter->findByPk($cloneID);
-            $this->handleClone($currentEventObject);
+            $response = $this->handleClone($currentEventObject);
         } else {
             // Standardmäßig handleEdit ohne ID (für Neuanlage)
-            $this->handleEdit('', null);
+            $response = $this->handleEdit('', null);
+        }
+
+        if ($response instanceof Response) {
+            return $response;
         }
 
         return $this->Template->getResponse();
@@ -602,7 +608,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         }
     }
 
-    public function generateRedirect(string $userSetting, ?int $DBid): void
+    public function generateRedirect(string $userSetting, ?int $DBid): Response
     {
         $this->initializeServices();
         $currentRequest = $this->requestStack->getCurrentRequest();
@@ -614,7 +620,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         switch ($userSetting) {
             case "":
                 if ($this->jumpTo) {
-                    $pageModel = PageModel::findByPk($DBid);
+                    $pageModel = PageModel::findByPk($this->jumpTo);
                     if ($pageModel !== null) {
                         $urlGenerator = System::getContainer()->get('contao.routing.content_url_generator');
                         $jumpTo = $urlGenerator->generate($pageModel);
@@ -654,7 +660,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         }
 
         // Redirect ausführen
-        $this->redirect($jumpTo, 301);
+        return $this->redirect($jumpTo, 303);
     }
 
     public function getContentElements($eventID, &$contentID, &$contentData): void
@@ -906,7 +912,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         return $returnID;
     }
 
-    protected function handleEdit($editID, $currentEventObject): void
+    protected function handleEdit($editID, $currentEventObject): ?Response
     {
         $this->initializeServices();
         $this->initializeLogger();
@@ -1013,7 +1019,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
                 // the POST-Data with some evil HackerToolz ;-)
                 $fatalError = $GLOBALS['TL_LANG']['MSC']['caledit_NoPublishAllowed'] . ' (POST data invalid)';
                 $this->Template->FatalError = $fatalError;
-                return;
+                return null;
             }
 
             if (empty($newEventData['pid'])) {
@@ -1026,7 +1032,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
                 // the POST with some evil HackerToolz. ;-)
                 $fatalError = $GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed'] . ' (POST data invalid)';
                 $this->Template->FatalError = $fatalError;
-                return;
+                return null;
             }
         }
 
@@ -1371,7 +1377,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
                 $this->sendNotificationMail($newEventData, $saveAs ? '' : $editID, $this->User->username, '');
             }
 
-            $this->generateRedirect($jumpToSelection, $dbId);
+            return $this->generateRedirect($jumpToSelection, (int)$dbId);
         } else {
             if ($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit') {
                 $this->Template->InfoClass = 'tl_error';
@@ -1379,9 +1385,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             }
             $this->Template->fields = $arrWidgets;
         }
+
+        return null;
     }
 
-    protected function handleDelete($currentEventObject): void
+    protected function handleDelete($currentEventObject): ?Response
     {
         $this->initializeServices();
 
@@ -1420,7 +1428,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
         if (!$this->caledit_allowDelete) {
             $this->Template->FatalError = $GLOBALS['TL_LANG']['MSC']['caledit_NoDelete'];
-            return;
+            return null;
         }
 
         // Edit- und Clone-Links erstellen
@@ -1493,7 +1501,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
                 $this->sendNotificationMail($oldEventData, -1, $this->User->username, '');
             }
 
-            $this->generateRedirect('', '0'); // Weiterleitung auf Standardseite
+            return $this->generateRedirect('', 0); // Weiterleitung auf Standardseite
         } else {
             if ($currentRequest->request->get('FORM_SUBMIT') === 'caledit_submit') {
                 $this->Template->InfoClass = 'tl_error';
@@ -1502,9 +1510,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         }
 
         $this->Template->fields = $arrWidgets;
+
+        return null;
     }
 
-    protected function handleClone($currentEventObject) : void
+    protected function handleClone($currentEventObject): ?Response
     {
         $this->initializeServices();
         $currentRequest = $this->requestStack->getCurrentRequest();
@@ -1796,7 +1806,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             }
 
             // after this: jump to "jumpTo-Page"
-            $this->generateRedirect($jumpToSelection, $DBid);
+            return $this->generateRedirect($jumpToSelection, (int)$DBid);
         } else {
             // Do NOT Submit
             if ($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit') {
@@ -1805,6 +1815,8 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             }
             $this->Template->fields = $arrWidgets;
         }
+
+        return null;
     }
 
     protected function sendNotificationMail($NewEventData, $editID, $User, $cloneDates) : void
