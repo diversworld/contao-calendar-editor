@@ -93,7 +93,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_mailSubject'] = array
 $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_mailTemplate'] = array
 (
     'label'                   => &$GLOBALS['TL_LANG']['tl_module']['caledit_mailTemplate'],
-    'default' => 'frontend_module/mail_event_notification',
+    'default' => 'mail_event_notification',
     'exclude'                 => true,
     'inputType'               => 'select',
     'options_callback' => [ModuleDca::class, 'getEventMailTemplates'],

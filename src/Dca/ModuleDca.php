@@ -42,7 +42,21 @@ class ModuleDca
     private function getTwigTemplates(string $prefix): array
     {
         $templates = $this->framework->getAdapter(Controller::class)->getTemplateGroup($prefix);
-        $templateDir = dirname(__DIR__, 2) . '/contao/templates/frontend_module';
+
+        // Scan bundle templates in root
+        $templateRoot = dirname(__DIR__, 2) . '/contao/templates';
+        if (is_dir($templateRoot)) {
+            $files = scandir($templateRoot);
+            foreach ($files as $file) {
+                if (str_starts_with($file, $prefix) && str_ends_with($file, '.html.twig')) {
+                    $name = substr($file, 0, -10);
+                    $templates[$name] = $name;
+                }
+            }
+        }
+
+        // Scan bundle templates in frontend_module subfolder
+        $templateDir = $templateRoot . '/frontend_module';
 
         if (is_dir($templateDir)) {
             $files = scandir($templateDir);

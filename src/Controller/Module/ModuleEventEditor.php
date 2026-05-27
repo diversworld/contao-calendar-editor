@@ -113,17 +113,17 @@ class ModuleEventEditor extends AbstractFrontendModuleController
     /**
      * @var string
      */
-    protected $caledit_usePredefinedCss;
+    protected $caledit_mailTemplate;
 
     /**
-     * @var string
+     * @var string|array
      */
-    protected $caledit_cssValues;
+    protected $caledit_mandatoryfields;
 
     /**
-     * @var string
+     * @var int
      */
-    protected $caledit_alternateCSSLabel;
+    protected $caledit_add_jumpTo;
 
     /**
      * @var string
@@ -133,22 +133,42 @@ class ModuleEventEditor extends AbstractFrontendModuleController
     /**
      * @var string
      */
+    protected $caledit_clone_template;
+
+    /**
+     * @var string
+     */
     protected $caledit_delete_template;
 
     /**
      * @var string
      */
-    protected $caledit_clone_template;
+    protected $caledit_tinMCEtemplate;
+
+    /**
+     * @var string
+     */
+    protected $caledit_alternateCSSLabel;
 
     /**
      * @var bool
      */
-    protected $caledit_allowDelete;
+    protected $caledit_usePredefinedCss;
+
+    /**
+     * @var string|array
+     */
+    protected $caledit_cssValues;
 
     /**
      * @var bool
      */
-    protected $caledit_allowClone;
+    protected $caledit_showDeleteLink;
+
+    /**
+     * @var bool
+     */
+    protected $caledit_showCloneLink;
 
     /**
      * @var bool
@@ -158,17 +178,12 @@ class ModuleEventEditor extends AbstractFrontendModuleController
     /**
      * @var string
      */
-    protected $caledit_mandatoryfields;
+    protected $caledit_dateDirection;
 
     /**
      * @var string
      */
     protected $caledit_dateIncludeCSSTheme;
-
-    /**
-     * @var string
-     */
-    protected $caledit_dateDirection;
 
     /**
      * @var bool
@@ -181,12 +196,32 @@ class ModuleEventEditor extends AbstractFrontendModuleController
     protected $caledit_dateImageSRC;
 
     /**
-     * @var mixed
+     * @var bool
+     */
+    protected $caledit_allowDelete;
+
+    /**
+     * @var bool
+     */
+    protected $caledit_allowClone;
+
+    /**
+     * @var int|string
      */
     protected $jumpTo;
 
     /**
-     * @var \Contao\CoreBundle\Security\Authentication\Token\TokenChecker
+     * @var string
+     */
+    protected $cal_template;
+
+    /**
+     * @var string|array
+     */
+    protected $cal_holidayCalendar;
+
+    /**
+     * @var \Contao\CoreBundle\Security\Authentication\Token\TokenChecker|null
      */
     protected $tokenChecker;
 
@@ -199,6 +234,21 @@ class ModuleEventEditor extends AbstractFrontendModuleController
      * @var ModuleModel|null
      */
     protected $model;
+
+    /**
+     * @var array
+     */
+    protected $allowedCalendars;
+
+    /**
+     * @var string
+     */
+    protected $strTemplate = 'frontend_module/eventEdit_default';
+
+    /**
+     * @var string
+     */
+    protected $errorString = '';
 
     public function __construct(
         private CheckAuthService|ModuleModel|null $calEditCheckAuthService = null,
@@ -249,6 +299,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->caledit_allowPublish = $model->caledit_allowPublish;
         $this->caledit_mailRecipient = $model->caledit_mailRecipient;
         $this->caledit_mailSubject = $model->caledit_mailSubject;
+        $this->caledit_mailTemplate = $model->caledit_mailTemplate;
         $this->caledit_usePredefinedCss = $model->caledit_usePredefinedCss;
         $this->caledit_cssValues = $model->caledit_cssValues;
         $this->caledit_alternateCSSLabel = $model->caledit_alternateCSSLabel;
@@ -263,6 +314,12 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->caledit_dateDirection = $model->caledit_dateDirection;
         $this->caledit_dateImage = $model->caledit_dateImage;
         $this->caledit_dateImageSRC = $model->caledit_dateImageSRC;
+        $this->caledit_add_jumpTo = $model->caledit_add_jumpTo;
+        $this->caledit_tinMCEtemplate = $model->caledit_tinMCEtemplate;
+        $this->caledit_showDeleteLink = $model->caledit_showDeleteLink;
+        $this->caledit_showCloneLink = $model->caledit_showCloneLink;
+        $this->cal_template = $model->cal_template;
+        $this->cal_holidayCalendar = $model->cal_holidayCalendar;
         $this->jumpTo = $model->jumpTo;
 
         $this->strTemplate = $model->customTpl ?: $this->strTemplate;
@@ -335,15 +392,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
         return $this->Template->getResponse();
     }
-    /**
-     * Template
-     *
-     * @var string
-     */
-    protected $strTemplate = 'frontend_module/eventEdit_default';
-    protected string $errorString = '';
-    protected array $allowedCalendars = [];
-
     protected function initializeLogger(): void
     {
         // $this->calEditLogger is already injected
@@ -1833,6 +1881,13 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
         $mailSubject = $this->caledit_mailSubject;
         // Template-Name basierend auf Aktion bestimmen
+        $templateName = $this->caledit_mailTemplate ?: 'mail_event_notification';
+
+        // Strip old prefix if exists
+        if (str_starts_with($templateName, 'frontend_module/')) {
+            $templateName = substr($templateName, 16);
+        }
+
         if ($editID) {
             if ($editID == -1) {
                 // Wenn ein Event gelöscht wird
@@ -1845,13 +1900,13 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             }
         } else {
             // Wenn ein Event erstellt wird
-            $templateName = 'mail_event_notification';
-            $notification->subject = $mailSubject; //($mailSubject, $host);
-            //$notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectNew'], $host);
+            // $templateName is already set to mail_event_notification or user choice
+            $notification->subject = $mailSubject;
         }
 
         // Template laden und rendern
-        $templatePath = 'frontend_module/' . $templateName . '.html.twig';
+        // Try @Contao namespace first (flatted)
+        $templatePath = '@Contao/' . $templateName . '.html.twig';
         $templateContent = System::getContainer()->get('twig')->render($templatePath, [
             'host' => $host,
             'hasFrontendUser' => $hasFrontendUser,
