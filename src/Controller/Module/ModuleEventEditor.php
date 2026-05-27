@@ -37,7 +37,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Psr\Log\LoggerInterface;
 
-#[AsFrontendModule(category: 'calendar', template: 'frontend_module/eventEdit_default')]
+#[AsFrontendModule('EventEditor', category: 'calendar', template: 'frontend_module/eventEdit_default')]
 class ModuleEventEditor extends AbstractFrontendModuleController
 {
     /**
@@ -345,11 +345,16 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
     protected function initializeServices(): void
     {
-        if ($this->calEditCheckAuthService instanceof CheckAuthService && $this->framework instanceof ContaoFramework && $this->User instanceof FrontendUser && $this->tokenChecker !== null) {
+        if ($this->calEditCheckAuthService instanceof CheckAuthService && $this->framework instanceof ContaoFramework && $this->User instanceof FrontendUser && $this->tokenChecker !== null && $this->container !== null) {
             return;
         }
 
         $container = System::getContainer();
+
+        if ($this->container === null) {
+            $this->setContainer($container);
+        }
+
         $this->calEditCheckAuthService = $container->get('caledit.service.auth');
         $this->framework = $container->get('contao.framework');
         $this->security = $container->get('security.helper');
@@ -413,55 +418,9 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             return '';
         }
 
-        // Map model properties to $this for legacy support and PHP 8.2 compatibility
-        $this->id = $model->id;
-        $this->name = $model->name;
-        $this->headline = $model->headline;
-        $this->type = $model->type;
-        $this->cal_calendar = $model->cal_calendar;
-        $this->customTpl = $model->customTpl;
-        $this->caledit_sendMail = $model->caledit_sendMail;
-        $this->caledit_allowPublish = $model->caledit_allowPublish;
-        $this->caledit_mailRecipient = $model->caledit_mailRecipient;
-        $this->caledit_mailSubject = $model->caledit_mailSubject;
-        $this->caledit_usePredefinedCss = $model->caledit_usePredefinedCss;
-        $this->caledit_cssValues = $model->caledit_cssValues;
-        $this->caledit_alternateCSSLabel = $model->caledit_alternateCSSLabel;
-        $this->caledit_template = $model->caledit_template;
-        $this->caledit_delete_template = $model->caledit_delete_template;
-        $this->caledit_clone_template = $model->caledit_clone_template;
-        $this->caledit_allowDelete = $model->caledit_allowDelete;
-        $this->caledit_allowClone = $model->caledit_allowClone;
-        $this->caledit_useDatePicker = $model->caledit_useDatePicker;
-        $this->caledit_mandatoryfields = $model->caledit_mandatoryfields;
-        $this->caledit_dateIncludeCSSTheme = $model->caledit_dateIncludeCSSTheme;
-        $this->caledit_dateDirection = $model->caledit_dateDirection;
-        $this->caledit_dateImage = $model->caledit_dateImage;
-        $this->caledit_dateImageSRC = $model->caledit_dateImageSRC;
-        $this->jumpTo = $model->jumpTo;
-
-        $this->strTemplate = $model->customTpl ?: $this->strTemplate;
-
         $request = $this->requestStack->getCurrentRequest();
-        if ($request && $this->scopeMatcher->isBackendRequest($request)) {
-            $objTemplate = new BackendTemplate('be_wildcard');
-            $objTemplate->wildcard = '### EVENT EDITOR ###';
-            $headline = StringUtil::deserialize($this->headline);
-            $objTemplate->title = is_array($headline) ? $headline['value'] : $this->headline;
-            $objTemplate->id = $this->id;
-            $objTemplate->link = $this->name;
-            $objTemplate->href = 'contao/main.php?do=themes&amp;table=tl_module&amp;act=edit&amp;id=' . $this->id;
-            return $objTemplate->parse();
-        }
 
-        $this->cal_calendar = $this->sortOutProtected(StringUtil::deserialize($this->cal_calendar));
-
-        // Return if there are no calendars
-        if (!is_array($this->cal_calendar) || count($this->cal_calendar) < 1) {
-            return '';
-        }
-
-        return System::getContainer()->get('contao.fragment.handler')->render($model)->getContent();
+        return $this->__invoke($request, $model, 'main')->getContent();
     }
 
     public function addTinyMCE($configuration): void

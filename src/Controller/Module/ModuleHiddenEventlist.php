@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Psr\Log\LoggerInterface;
 
-#[AsFrontendModule(category: 'calendar', template: 'mod_eventlist')]
+#[AsFrontendModule('EventHiddenList', category: 'calendar', template: 'mod_eventlist')]
 class ModuleHiddenEventlist extends AbstractFrontendModuleController
 {
     /**
@@ -49,27 +49,21 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
         $this->initializeServices();
         $request = System::getContainer()->get('request_stack')->getCurrentRequest();
 
-        if ($request && System::getContainer()->get('contao.routing.scope_matcher')->isBackendRequest($request)) {
-            $objTemplate = new \Contao\BackendTemplate('be_wildcard');
-            $objTemplate->wildcard = '### EVENT HIDDEN LIST ###';
-            $headline = StringUtil::deserialize($this->model->headline);
-            $objTemplate->title = is_array($headline) ? $headline['value'] : $this->model->headline;
-            $objTemplate->id = $this->model->id;
-            $objTemplate->link = $this->model->name;
-            $objTemplate->href = 'contao/main.php?do=themes&amp;table=tl_module&amp;act=edit&amp;id=' . $this->model->id;
-            return $objTemplate->parse();
-        }
-
-        return System::getContainer()->get('contao.fragment.handler')->render($this->model)->getContent();
+        return $this->__invoke($request, $this->model, 'main')->getContent();
     }
 
     protected function initializeServices(): void
     {
-        if ($this->framework instanceof ContaoFramework) {
+        if ($this->framework instanceof ContaoFramework && $this->container !== null) {
             return;
         }
 
         $container = System::getContainer();
+
+        if ($this->container === null) {
+            $this->setContainer($container);
+        }
+
         $this->framework = $container->get('contao.framework');
         $this->logger = $container->get('monolog.logger.contao.general');
     }
