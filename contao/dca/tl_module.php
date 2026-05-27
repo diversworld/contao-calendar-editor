@@ -185,7 +185,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_cssValues'] = array
     'inputType'               => 'multiColumnWizard',
     'eval' => [
         'tl_class' => 'w50',
-        'columnsCallback' => [ModuleDca::class, 'getCSSValues]']
+        'columnsCallback' => [ModuleDca::class, 'getCSSValues']
     ],
     'sql'					  => "text NULL"
 );

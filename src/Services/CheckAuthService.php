@@ -39,8 +39,9 @@ class CheckAuthService
 
             // Get Groups which are allowed to edit events in this calendar
             $groups = StringUtil::deserialize($calendar->caledit_groups);
+            $userGroups = $user->groups ?? [];
             if (is_array($groups) && (count($groups) > 0)
-                && is_array($user->groups) && (count(array_intersect($groups, $user->groups)) > 0)) {
+                && is_array($userGroups) && (count(array_intersect($groups, $userGroups)) > 0)) {
                 return true;
             }
         }
@@ -65,8 +66,9 @@ class CheckAuthService
             // (Admins are allowed to edit events even if the "only owner"-setting is checked)
             // (Admins are allowed to add events on elapsed days)
             $admin_groups = StringUtil::deserialize($calendar->caledit_adminGroup);
+            $userGroups = $user->groups ?? [];
             if (is_array($admin_groups) && (count($admin_groups) > 0)
-                && is_array($user->groups) && (count(array_intersect($admin_groups, $user->groups)) > 0)) {
+                && is_array($userGroups) && (count(array_intersect($admin_groups, $userGroups)) > 0)) {
                 return true;
             }
         }

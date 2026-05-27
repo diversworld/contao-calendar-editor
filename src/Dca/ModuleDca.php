@@ -44,7 +44,12 @@ class ModuleDca
     private function getTwigTemplates(string $prefix): array
     {
         $templates = $this->framework->getAdapter(Controller::class)->getTemplateGroup($prefix);
-        $templateDir = dirname(__DIR__, 2) . '/contao/templates/frontend_module';
+        $templateDir = $this->projectDir . '/vendor/diversworld/contao-calendar-editor/contao/templates/frontend_module';
+
+        // Alternative path for local development if not in vendor
+        if (!is_dir($templateDir)) {
+            $templateDir = dirname(__DIR__, 2) . '/contao/templates/frontend_module';
+        }
 
         if (is_dir($templateDir)) {
             $files = scandir($templateDir);
@@ -113,6 +118,10 @@ class ModuleDca
     {
         $arrConfigs = [];
         $tinyMCEPath = $this->projectDir . '/vendor/diversworld/contao-calendar-editor/contao/tinyMCE/';
+
+        if (!is_dir($tinyMCEPath)) {
+            $tinyMCEPath = dirname(__DIR__, 2) . '/contao/tinyMCE/';
+        }
 
         if (is_dir($tinyMCEPath)) {
             $arrFiles = scandir($tinyMCEPath);

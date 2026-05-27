@@ -23,25 +23,46 @@ use Symfony\Bundle\SecurityBundle\Security;
 class ModuleEventReaderEdit extends AbstractFrontendModuleController
 {
     /**
+     * @var CheckAuthService|null
+     */
+    protected $checkAuthService;
+
+    /**
+     * @var ContaoFramework|null
+     */
+    protected $framework;
+
+    /**
+     * @var Security|null
+     */
+    protected $security;
+
+    /**
      * @var ModuleModel|null
      */
     protected $model;
 
     public function __construct(
-        private CheckAuthService|ModuleModel|null $checkAuthService = null,
-        private ContaoFramework|string|null       $framework = null,
-        private ?Security                         $security = null,
-        ModuleModel|null                          $model = null,
+        $checkAuthService = null,
+        $framework = null,
+        ?Security $security = null,
+        ModuleModel|null $model = null,
     )
     {
-        if ($this->checkAuthService instanceof ModuleModel) {
-            $model = $this->checkAuthService;
-            $this->checkAuthService = null;
+        if ($checkAuthService instanceof ModuleModel) {
+            $model = $checkAuthService;
+            $checkAuthService = null;
         }
 
-        if (is_string($this->framework)) {
-            $this->framework = null;
+        if ($checkAuthService instanceof CheckAuthService) {
+            $this->checkAuthService = $checkAuthService;
         }
+
+        if ($framework instanceof ContaoFramework) {
+            $this->framework = $framework;
+        }
+
+        $this->security = $security;
 
         if ($model !== null) {
             $this->model = $model;
@@ -66,7 +87,11 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
             return $objTemplate->parse();
         }
 
-        $template = new \Contao\FrontendTemplate($this->model->customTpl ?: 'frontend_module/mod_event_ReaderEditLink');
+        $strTemplate = $this->model->customTpl ?: 'frontend_module/mod_event_ReaderEditLink';
+        if ($strTemplate && !str_contains($strTemplate, '/')) {
+            $strTemplate = 'frontend_module/' . $strTemplate;
+        }
+        $template = new \Contao\FrontendTemplate($strTemplate);
         $response = $this->getResponse($template, $this->model, $request);
 
         return $response->getContent();
@@ -84,7 +109,7 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
         $this->security = $container->get('security.helper');
     }
 
-    protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
+    protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
     {
         // Return if no event has been specified
         if (!$request->query->has('auto_item') && !($request->attributes->has('_route_params') && isset($request->attributes->get('_route_params')['auto_item']))) {

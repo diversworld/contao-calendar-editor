@@ -194,7 +194,37 @@ class ModuleEventEditor extends AbstractFrontendModuleController
     /**
      * @var CheckAuthService|null
      */
-    protected $checkAuthService;
+    protected $calEditCheckAuthService;
+
+    /**
+     * @var ContaoFramework|null
+     */
+    protected $framework;
+
+    /**
+     * @var Security|null
+     */
+    protected $security;
+
+    /**
+     * @var LoggerInterface|null
+     */
+    protected $calEditLogger;
+
+    /**
+     * @var ScopeMatcher|null
+     */
+    protected $scopeMatcher;
+
+    /**
+     * @var RequestStack|null
+     */
+    protected $requestStack;
+
+    /**
+     * @var Connection|null
+     */
+    protected $connection;
 
     /**
      * @var ModuleModel|null
@@ -202,39 +232,43 @@ class ModuleEventEditor extends AbstractFrontendModuleController
     protected $model;
 
     public function __construct(
-        private CheckAuthService|ModuleModel|null $calEditCheckAuthService = null,
-        private ContaoFramework|string|null       $framework = null,
-        private ?Security                         $security = null,
-        private ?LoggerInterface                  $calEditLogger = null,
-        private ?ScopeMatcher                     $scopeMatcher = null,
-        private ?RequestStack                     $requestStack = null,
-        private ?Connection                       $connection = null,
-        ModuleModel|null                          $model = null,
+        $calEditCheckAuthService = null,
+        $framework = null,
+        ?Security $security = null,
+        ?LoggerInterface $calEditLogger = null,
+        ?ScopeMatcher $scopeMatcher = null,
+        ?RequestStack $requestStack = null,
+        ?Connection $connection = null,
+        ?ModuleModel $model = null,
     )
     {
-        if ($this->calEditCheckAuthService instanceof ModuleModel) {
-            $model = $this->checkAuthService = $this->calEditCheckAuthService;
-            $this->calEditCheckAuthService = null;
+        if ($calEditCheckAuthService instanceof ModuleModel) {
+            $model = $calEditCheckAuthService;
+            $calEditCheckAuthService = null;
         }
 
-        if (is_string($this->framework)) {
-            $this->framework = null;
+        if ($calEditCheckAuthService instanceof CheckAuthService) {
+            $this->calEditCheckAuthService = $calEditCheckAuthService;
         }
+
+        if ($framework instanceof ContaoFramework) {
+            $this->framework = $framework;
+        }
+
+        $this->security = $security;
+        $this->calEditLogger = $calEditLogger;
+        $this->scopeMatcher = $scopeMatcher;
+        $this->requestStack = $requestStack;
+        $this->connection = $connection;
 
         if ($model !== null) {
-            // Do not call parent::__construct($model) if $model is NOT a ModuleModel
-            // although it is typed, Contao might pass something else if we are not careful
-            // but here we check for instanceof ModuleModel above.
-
-            // AbstractFrontendModuleController does not have a constructor that takes arguments.
-            // It has a $model property.
             $this->model = $model;
         }
 
         $this->initializeServices();
     }
 
-    protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
+    protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
     {
         $this->initializeServices();
 
@@ -263,11 +297,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->caledit_dateDirection = $model->caledit_dateDirection;
         $this->caledit_dateImage = $model->caledit_dateImage;
         $this->caledit_dateImageSRC = $model->caledit_dateImageSRC;
-        $this->jumpTo = $model->jumpTo;
-
-        $this->strTemplate = $model->customTpl ?: $this->strTemplate;
-
-        $this->Template = $template;
+        $strTemplate = $model->customTpl ?: $this->strTemplate;
+        if ($strTemplate && !str_contains($strTemplate, '/')) {
+            $strTemplate = 'frontend_module/' . $strTemplate;
+        }
+        $this->strTemplate = $strTemplate;
 
         // Ensure variables from getResponse argument $template are copied to $this->Template if it was changed
         if ($this->Template !== $template) {
@@ -439,9 +473,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->caledit_dateDirection = $model->caledit_dateDirection;
         $this->caledit_dateImage = $model->caledit_dateImage;
         $this->caledit_dateImageSRC = $model->caledit_dateImageSRC;
-        $this->jumpTo = $model->jumpTo;
-
-        $this->strTemplate = $model->customTpl ?: $this->strTemplate;
+        $strTemplate = $model->customTpl ?: $this->strTemplate;
+        if ($strTemplate && !str_contains($strTemplate, '/')) {
+            $strTemplate = 'frontend_module/' . $strTemplate;
+        }
+        $this->strTemplate = $strTemplate;
 
         $request = $this->requestStack->getCurrentRequest();
         if ($this->scopeMatcher->isBackendRequest($request)) {
@@ -1452,7 +1488,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
         $currentRequest = $this->requestStack->getCurrentRequest();
 
-        $this->strTemplate = $this->caledit_delete_template ?: 'frontend_module/eventEdit_delete';
+        $strTemplate = $this->caledit_delete_template ?: 'frontend_module/eventEdit_delete';
+        if ($strTemplate && !str_contains($strTemplate, '/')) {
+            $strTemplate = 'frontend_module/' . $strTemplate;
+        }
+        $this->strTemplate = $strTemplate;
         $this->Template = new FrontendTemplate($this->strTemplate);
 
         // Initialize all template variables to avoid Twig errors
@@ -1574,7 +1614,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->initializeServices();
         $currentRequest = $this->requestStack->getCurrentRequest();
 
-        $this->strTemplate = $this->caledit_clone_template ?: 'frontend_module/eventEdit_duplicate';
+        $strTemplate = $this->caledit_clone_template ?: 'frontend_module/eventEdit_duplicate';
+        if ($strTemplate && !str_contains($strTemplate, '/')) {
+            $strTemplate = 'frontend_module/' . $strTemplate;
+        }
+        $this->strTemplate = $strTemplate;
         $this->Template = new FrontendTemplate($this->strTemplate);
 
         // Initialize all template variables to avoid Twig errors
@@ -1889,16 +1933,16 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         if ($editID) {
             if ($editID == -1) {
                 // Wenn ein Event gelöscht wird
-                $templateName = 'mail_event_subject_delete';
+                $templateName = 'frontend_module/mail_event_subject_delete';
                 $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectDelete'], $host);
             } else {
                 // Wenn ein Event geändert wird
-                $templateName = 'mail_event_subject_edit';
+                $templateName = 'frontend_module/mail_event_subject_edit';
                 $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectEdit'], $host);
             }
         } else {
             // Wenn ein Event erstellt wird
-            $templateName = 'mail_event_notification';
+            $templateName = 'frontend_module/mail_event_notification';
             $notification->subject = $mailSubject; //($mailSubject, $host);
             //$notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectNew'], $host);
         }
