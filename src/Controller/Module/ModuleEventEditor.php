@@ -1883,11 +1883,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         // Template-Name basierend auf Aktion bestimmen
         $templateName = $this->caledit_mailTemplate ?: 'mail_event_notification';
 
-        // Strip old prefix if exists
-        if (str_starts_with($templateName, 'frontend_module/')) {
-            $templateName = substr($templateName, 16);
-        }
-
         if ($editID) {
             if ($editID == -1) {
                 // Wenn ein Event gelöscht wird
@@ -1900,14 +1895,14 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             }
         } else {
             // Wenn ein Event erstellt wird
-            // $templateName is already set to mail_event_notification or user choice
             $notification->subject = $mailSubject;
         }
 
-        // Template laden und rendern
-        // Try @Contao namespace first (flatted)
-        $templatePath = '@Contao/' . $templateName . '.html.twig';
-        $templateContent = System::getContainer()->get('twig')->render($templatePath, [
+        // Template laden und rendern mit @Contao Namespace
+        // Wir versuchen mehrere Pfade, da die Auflösung in Contao 5/6 variieren kann
+        $twig = System::getContainer()->get('twig');
+        $templateContent = '';
+        $renderData = [
             'host' => $host,
             'hasFrontendUser' => $hasFrontendUser,
             'user' => $User,
@@ -1919,7 +1914,39 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             'published' => $NewEventData['published'] ?? '0',
             'cloneDates' => $cloneDates,
             'allowPublish' => $this->caledit_allowPublish,
-        ]);
+        ];
+
+        // Suchreihenfolge für das Template
+        $searchTemplates = [
+            '@Contao/' . $templateName . '.html.twig',
+            $templateName . '.html.twig',
+            '@Contao/frontend_module/' . $templateName . '.html.twig',
+            'frontend_module/' . $templateName . '.html.twig',
+        ];
+
+        // Falls im templateName schon frontend_module/ drin steht (Legacy-Daten), auch ohne versuchen
+        if (str_starts_with($templateName, 'frontend_module/')) {
+            $strippedName = substr($templateName, 16);
+            $searchTemplates[] = '@Contao/' . $strippedName . '.html.twig';
+            $searchTemplates[] = $strippedName . '.html.twig';
+        }
+
+        $lastException = null;
+        foreach ($searchTemplates as $path) {
+            try {
+                $templateContent = $twig->render($path, $renderData);
+                $lastException = null;
+                break;
+            } catch (\Twig\Error\LoaderError $e) {
+                $lastException = $e;
+            }
+        }
+
+        if ($lastException) {
+            // Wenn gar kein Template gefunden wurde, werfen wir den Fehler erneut oder nutzen einen Fallback-Text
+            throw $lastException;
+        }
+
         $notification->text = $templateContent;
 
         // Empfänger aufteilen
