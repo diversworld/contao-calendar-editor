@@ -19,37 +19,23 @@ use Psr\Log\LoggerInterface;
 class ModuleHiddenEventlist extends AbstractFrontendModuleController
 {
     /**
-     * @var ContaoFramework|null
-     */
-    protected $framework;
-
-    /**
-     * @var LoggerInterface|null
-     */
-    protected $logger;
-
-    /**
      * @var ModuleModel|null
      */
     protected $model;
 
     public function __construct(
-        $framework = null,
-        $logger = null,
-        ModuleModel|null $model = null,
+        private ContaoFramework|ModuleModel|null $framework = null,
+        private LoggerInterface|string|null      $logger = null,
+        ModuleModel|null                         $model = null,
     )
     {
-        if ($framework instanceof ModuleModel) {
-            $model = $framework;
-            $framework = null;
+        if ($this->framework instanceof ModuleModel) {
+            $model = $this->framework;
+            $this->framework = null;
         }
 
-        if ($framework instanceof ContaoFramework) {
-            $this->framework = $framework;
-        }
-
-        if ($logger instanceof LoggerInterface) {
-            $this->logger = $logger;
+        if (is_string($this->logger)) {
+            $this->logger = null;
         }
 
         if ($model !== null) {
@@ -92,7 +78,7 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
         $this->logger = $container->get('monolog.logger.contao.general');
     }
 
-    protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
+    protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
     {
         $headline = StringUtil::deserialize($model->headline);
         $template->headline = is_array($headline) ? $headline['value'] : $model->headline;
