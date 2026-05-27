@@ -9,7 +9,6 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\ModuleModel;
 use Contao\StringUtil;
 use Contao\System;
-use Contao\Template;
 use Contao\CoreBundle\Twig\FragmentTemplate;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -50,7 +49,7 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
         $this->initializeServices();
         $request = System::getContainer()->get('request_stack')->getCurrentRequest();
 
-        if (System::getContainer()->get('contao.routing.scope_matcher')->isBackendRequest($request)) {
+        if ($request && System::getContainer()->get('contao.routing.scope_matcher')->isBackendRequest($request)) {
             $objTemplate = new \Contao\BackendTemplate('be_wildcard');
             $objTemplate->wildcard = '### EVENT HIDDEN LIST ###';
             $headline = StringUtil::deserialize($this->model->headline);
@@ -61,10 +60,7 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
             return $objTemplate->parse();
         }
 
-        $template = new \Contao\FrontendTemplate($this->model->customTpl ?: 'mod_eventlist');
-        $response = $this->getResponse($template, $this->model, $request);
-
-        return $response->getContent();
+        return System::getContainer()->get('contao.fragment.handler')->render($this->model)->getContent();
     }
 
     protected function initializeServices(): void
@@ -78,7 +74,7 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
         $this->logger = $container->get('monolog.logger.contao.general');
     }
 
-    protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
+    protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
     {
         $headline = StringUtil::deserialize($model->headline);
         $template->headline = is_array($headline) ? $headline['value'] : $model->headline;

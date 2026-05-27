@@ -11,7 +11,6 @@ use Contao\ModuleModel;
 use Contao\PageModel;
 use Contao\StringUtil;
 use Contao\System;
-use Contao\Template;
 use Contao\CoreBundle\Twig\FragmentTemplate;
 use Diversworld\CalendarEditorBundle\Models\CalendarModelEdit;
 use Diversworld\CalendarEditorBundle\Services\CheckAuthService;
@@ -55,7 +54,7 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
         $this->initializeServices();
         $request = System::getContainer()->get('request_stack')->getCurrentRequest();
 
-        if (System::getContainer()->get('contao.routing.scope_matcher')->isBackendRequest($request)) {
+        if ($request && System::getContainer()->get('contao.routing.scope_matcher')->isBackendRequest($request)) {
             $objTemplate = new \Contao\BackendTemplate('be_wildcard');
             $objTemplate->wildcard = '### EVENT READER EDIT LINK ###';
             $headline = StringUtil::deserialize($this->model->headline);
@@ -66,10 +65,7 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
             return $objTemplate->parse();
         }
 
-        $template = new \Contao\FrontendTemplate($this->model->customTpl ?: 'frontend_module/mod_event_ReaderEditLink');
-        $response = $this->getResponse($template, $this->model, $request);
-
-        return $response->getContent();
+        return System::getContainer()->get('contao.fragment.handler')->render($this->model)->getContent();
     }
 
     protected function initializeServices(): void
@@ -84,7 +80,7 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
         $this->security = $container->get('security.helper');
     }
 
-    protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
+    protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
     {
         // Return if no event has been specified
         if (!$request->query->has('auto_item') && !($request->attributes->has('_route_params') && isset($request->attributes->get('_route_params')['auto_item']))) {
