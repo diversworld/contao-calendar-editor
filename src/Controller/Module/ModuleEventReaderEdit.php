@@ -11,6 +11,7 @@ use Contao\ModuleModel;
 use Contao\PageModel;
 use Contao\StringUtil;
 use Contao\System;
+use Contao\Template;
 use Contao\CoreBundle\Twig\FragmentTemplate;
 use Diversworld\CalendarEditorBundle\Models\CalendarModelEdit;
 use Diversworld\CalendarEditorBundle\Services\CheckAuthService;
@@ -27,14 +28,63 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
     protected $model;
 
     public function __construct(
-        private readonly CheckAuthService $checkAuthService,
-        private readonly ContaoFramework  $framework,
-        private readonly Security         $security,
+        private CheckAuthService|ModuleModel|null $checkAuthService = null,
+        private ContaoFramework|string|null       $framework = null,
+        private ?Security                         $security = null,
+        ModuleModel|null                          $model = null,
     )
     {
+        if ($this->checkAuthService instanceof ModuleModel) {
+            $model = $this->checkAuthService;
+            $this->checkAuthService = null;
+        }
+
+        if (is_string($this->framework)) {
+            $this->framework = null;
+        }
+
+        if ($model !== null) {
+            $this->model = $model;
+        }
+
+        $this->initializeServices();
     }
 
-    protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
+    public function generate(): string
+    {
+        $this->initializeServices();
+        $request = System::getContainer()->get('request_stack')->getCurrentRequest();
+
+        if (System::getContainer()->get('contao.routing.scope_matcher')->isBackendRequest($request)) {
+            $objTemplate = new \Contao\BackendTemplate('be_wildcard');
+            $objTemplate->wildcard = '### EVENT READER EDIT LINK ###';
+            $headline = StringUtil::deserialize($this->model->headline);
+            $objTemplate->title = is_array($headline) ? $headline['value'] : $this->model->headline;
+            $objTemplate->id = $this->model->id;
+            $objTemplate->link = $this->model->name;
+            $objTemplate->href = 'contao/main.php?do=themes&amp;table=tl_module&amp;act=edit&amp;id=' . $this->model->id;
+            return $objTemplate->parse();
+        }
+
+        $template = new \Contao\FrontendTemplate($this->model->customTpl ?: 'frontend_module/mod_event_ReaderEditLink');
+        $response = $this->getResponse($template, $this->model, $request);
+
+        return $response->getContent();
+    }
+
+    protected function initializeServices(): void
+    {
+        if ($this->framework instanceof ContaoFramework) {
+            return;
+        }
+
+        $container = System::getContainer();
+        $this->framework = $container->get('contao.framework');
+        $this->checkAuthService = $container->get('caledit.service.auth');
+        $this->security = $container->get('security.helper');
+    }
+
+    protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
     {
         // Return if no event has been specified
         if (!$request->query->has('auto_item') && !($request->attributes->has('_route_params') && isset($request->attributes->get('_route_params')['auto_item']))) {

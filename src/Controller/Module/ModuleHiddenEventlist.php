@@ -9,6 +9,7 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\ModuleModel;
 use Contao\StringUtil;
 use Contao\System;
+use Contao\Template;
 use Contao\CoreBundle\Twig\FragmentTemplate;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -44,6 +45,28 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
         $this->initializeServices();
     }
 
+    public function generate(): string
+    {
+        $this->initializeServices();
+        $request = System::getContainer()->get('request_stack')->getCurrentRequest();
+
+        if (System::getContainer()->get('contao.routing.scope_matcher')->isBackendRequest($request)) {
+            $objTemplate = new \Contao\BackendTemplate('be_wildcard');
+            $objTemplate->wildcard = '### EVENT HIDDEN LIST ###';
+            $headline = StringUtil::deserialize($this->model->headline);
+            $objTemplate->title = is_array($headline) ? $headline['value'] : $this->model->headline;
+            $objTemplate->id = $this->model->id;
+            $objTemplate->link = $this->model->name;
+            $objTemplate->href = 'contao/main.php?do=themes&amp;table=tl_module&amp;act=edit&amp;id=' . $this->model->id;
+            return $objTemplate->parse();
+        }
+
+        $template = new \Contao\FrontendTemplate($this->model->customTpl ?: 'mod_eventlist');
+        $response = $this->getResponse($template, $this->model, $request);
+
+        return $response->getContent();
+    }
+
     protected function initializeServices(): void
     {
         if ($this->framework instanceof ContaoFramework) {
@@ -55,7 +78,7 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
         $this->logger = $container->get('monolog.logger.contao.general');
     }
 
-    protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
+    protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
     {
         $headline = StringUtil::deserialize($model->headline);
         $template->headline = is_array($headline) ? $headline['value'] : $model->headline;
