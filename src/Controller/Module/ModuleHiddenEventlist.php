@@ -3,15 +3,13 @@
 namespace Diversworld\CalendarEditorBundle\Controller\Module;
 
 use Contao\CalendarEventsModel;
-use Contao\CalendarModel;
 use Contao\CoreBundle\Controller\FrontendModule\AbstractFrontendModuleController;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsFrontendModule;
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\ModuleModel;
-use Contao\PageModel;
 use Contao\StringUtil;
-use Contao\Template;
 use Contao\System;
+use Contao\CoreBundle\Twig\FragmentTemplate;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Psr\Log\LoggerInterface;
@@ -57,7 +55,7 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
         $this->logger = $container->get('monolog.logger.contao.general');
     }
 
-    protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
+    protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
     {
         $headline = StringUtil::deserialize($model->headline);
         $template->headline = is_array($headline) ? $headline['value'] : $model->headline;

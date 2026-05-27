@@ -26,7 +26,6 @@ use Contao\ModuleModel;
 use Contao\PageModel;
 use Contao\StringUtil;
 use Contao\System;
-use Contao\Template;
 use Diversworld\CalendarEditorBundle\Models\CalendarModelEdit;
 use Diversworld\CalendarEditorBundle\Services\CheckAuthService;
 use Doctrine\DBAL\Connection;
@@ -52,7 +51,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
     protected $User;
 
     /**
-     * @var FrontendTemplate|Template
+     * @var FragmentTemplate|FrontendTemplate
      */
     protected $Template;
 
@@ -234,7 +233,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->initializeServices();
     }
 
-    protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
+    protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
     {
         $this->initializeServices();
 

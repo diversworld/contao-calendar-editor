@@ -10,7 +10,6 @@ use Contao\FrontendUser;
 use Contao\ModuleModel;
 use Contao\PageModel;
 use Contao\StringUtil;
-use Contao\Template;
 use Contao\System;
 use Contao\CoreBundle\Twig\FragmentTemplate;
 use Diversworld\CalendarEditorBundle\Models\CalendarModelEdit;
@@ -35,7 +34,7 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
     {
     }
 
-    protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
+    protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
     {
         // Return if no event has been specified
         if (!$request->query->has('auto_item') && !($request->attributes->has('_route_params') && isset($request->attributes->get('_route_params')['auto_item']))) {
