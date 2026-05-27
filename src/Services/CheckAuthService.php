@@ -3,14 +3,8 @@
 namespace Diversworld\CalendarEditorBundle\Services;
 
 use Contao\FrontendUser;
-use Contao\MemberModel;
 use Contao\StringUtil;
 use Contao\System;
-use function Diversworld\CalendarEditorBundle\EventIsNotElapsed;
-use function Diversworld\CalendarEditorBundle\EventIsNotElapsed2;
-use function Diversworld\CalendarEditorBundle\MidnightTime;
-use function Diversworld\CalendarEditorBundle\UserIsAdmin;
-use function Diversworld\CalendarEditorBundle\UserIsAuthorizedUser;
 
 class CheckAuthService
 {
@@ -145,7 +139,7 @@ class CheckAuthService
                 && ($tokenChecker->hasFrontendUser() || !$calendar->caledit_loginRequired)
                 // Allow only if CalendarEditing is not restricted to future events -OR- EventTime is later then CurrentTime,
                 //&& ((!$objCalendar->caledit_onlyFuture) ||  (time() <= $objEvent->startTime) )
-                && ((!$calendar->caledit_onlyFuture) || (EventIsNotElapsed2($event)))
+                && ((!$calendar->caledit_onlyFuture) || ($this->isEventNotElapsed((int)$event->startTime, (int)$event->endTime)))
 
                 // Allow only if CalendarEditing is not restricted to the Owner -OR- The Owner is currently logged in
                 && ((!$calendar->caledit_onlyUser) || ($event->fe_user == $user->id))

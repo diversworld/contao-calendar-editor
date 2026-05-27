@@ -7,7 +7,6 @@ use Contao\CalendarModel;
 use Contao\Controller;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\CoreBundle\Framework\ContaoFramework;
-use Diversworld\CalendarEditorBundle\Services\CheckAuthService;
 use Symfony\Bundle\SecurityBundle\Security;
 
 class ModuleDca
@@ -15,7 +14,6 @@ class ModuleDca
     public function __construct(
         private readonly ContaoFramework  $framework,
         private readonly Security         $security,
-        private readonly CheckAuthService $checkAuthService,
         private readonly string           $projectDir,
     )
     {
