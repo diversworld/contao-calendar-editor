@@ -55,7 +55,7 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
 
         $this->setFragmentOptions([
             'type' => 'EventHiddenList',
-            'template' => 'frontend_module/event_list_hidden'
+            'template' => $this->model->customTpl ?: 'frontend_module/event_list_hidden'
         ]);
 
         return $this->__invoke($request, $this->model, 'main')->getContent();

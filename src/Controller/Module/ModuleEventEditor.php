@@ -89,10 +89,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
      * @var string
      */
     protected $customTpl;
-
-    /**
-     * @var bool
-     */
     protected $caledit_sendMail;
 
     /**
@@ -243,11 +239,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
     /**
      * @var string
      */
-    protected $strTemplate = 'frontend_module/event_edit_default';
-
-    /**
-     * @var string
-     */
     protected $errorString = '';
 
     public function __construct(
@@ -321,8 +312,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->cal_template = $model->cal_template;
         $this->cal_holidayCalendar = $model->cal_holidayCalendar;
         $this->jumpTo = $model->jumpTo;
-
-        $this->strTemplate = $model->customTpl ?: $this->strTemplate;
 
         $this->Template = $template;
 
@@ -481,7 +470,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         // Set fragment options to avoid automatic type derivation from class name
         $this->setFragmentOptions([
             'type' => 'EventEditor',
-            'template' => 'frontend_module/event_edit_default'
+            'template' => $model->customTpl ?: ($model->caledit_template ?: 'frontend_module/event_edit_default')
         ]);
 
         return $this->__invoke($request, $model, 'main')->getContent();
@@ -1453,8 +1442,8 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
         $currentRequest = $this->requestStack->getCurrentRequest();
 
-        $this->strTemplate = $this->caledit_delete_template ?: 'frontend_module/event_edit_delete';
-        $this->Template->setName($this->strTemplate);
+        $templateName = $this->caledit_delete_template ?: 'frontend_module/event_edit_delete';
+        $this->Template->setName($templateName);
 
         // Initialize all template variables to avoid Twig errors
         $this->Template->fields = [];
@@ -1577,8 +1566,8 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->initializeServices();
         $currentRequest = $this->requestStack->getCurrentRequest();
 
-        $this->strTemplate = $this->caledit_clone_template ?: 'frontend_module/event_edit_duplicate';
-        $this->Template->setName($this->strTemplate);
+        $templateName = $this->caledit_clone_template ?: 'frontend_module/event_edit_duplicate';
+        $this->Template->setName($templateName);
 
         // Initialize all template variables to avoid Twig errors
         $this->Template->fields = [];

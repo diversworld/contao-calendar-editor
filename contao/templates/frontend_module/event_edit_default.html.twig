@@ -1,47 +1,59 @@
-<div class="mod_EventEditor block">
-    {% set headlineText = headline is iterable ? headline.text|default('') : headline %}
-    {% if headlineText|default('') %}
-    <{{ hl|default('h1') }}>{{ headlineText }}</{{ hl|default('h1') }}>
-{% endif %}
+{% extends "@Contao/frontend_module/_base.html.twig" %}
 
-<p class="error">
-    {{ InfoMessage|default('') }}
-</p>
+{% block content %}
+    {{ block('info_message') }}
+    {{ block('current_action') }}
+    {{ block('action_list') }}
+    {{ block('form_container') }}
+{% endblock %}
 
-<h2>{{ 'MSC.caledit_currentActionEdit'|trans({}, 'contao_default') }}</h2>
-
-<p class="caledit_info">
-    {% if CurrentEventLink|default('') %}
-        <span class="date"> {{ CurrentDate|default('') }}: </span><span
-            class="title">{{ CurrentTitle|default('') }}</span>
-        <span class="caledit_publishinfo"> ({{ CurrentPublishedInfo|default('') }}) </span>
-    {% else %}
-        <span class="caledit_publishinfo"> ({{ CurrentPublishedInfo|default('') }}) </span>
+{% block info_message %}
+    {% if InfoMessage|default('') %}
+        <p class="error">
+            {{ InfoMessage|raw }}
+        </p>
     {% endif %}
-</p>
+{% endblock %}
 
-{% if deleteRef|default('') or cloneRef|default('') or editRef|default('') or CurrentEventLink|default('') %}
-    <ul class="CalendarEditActionList">
+{% block current_action %}
+    <h2>{{ 'MSC.caledit_currentActionEdit'|trans({}, 'contao_default') }}</h2>
+
+    <p class="caledit_info">
         {% if CurrentEventLink|default('') %}
-            <li class="viewlink"><a href="{{ CurrentEventLink }}"
-                                    title="{{ CurrentTitle|default('') }}"> {{ 'MSC.caledit_viewLabel'|trans({}, 'contao_default') }} </a>
-            </li>
+            <span class="date"> {{ CurrentDate|default('') }}: </span><span
+                class="title">{{ CurrentTitle|default('') }}</span>
+            <span class="caledit_publishinfo"> ({{ CurrentPublishedInfo|default('') }}) </span>
+        {% else %}
+            <span class="caledit_publishinfo"> ({{ CurrentPublishedInfo|default('') }}) </span>
         {% endif %}
-        {% if editRef|default('') %}
-            <li class="editlink"><a href="{{ editRef }}"
-                                    title="{{ editTitle|default('') }}"> {{ editLabel|default('') }} </a></li>
-        {% endif %}
-        {% if cloneRef|default('') %}
-            <li class="clonelink"><a href="{{ cloneRef }}"
-                                     title="{{ cloneTitle|default('') }}"> {{ cloneLabel|default('') }} </a></li>
-        {% endif %}
-        {% if deleteRef|default('') %}
-            <li class="deletelink"><a href="{{ deleteRef }}"
-                                      title="{{ deleteTitle|default('') }}"> {{ deleteLabel|default('') }} </a></li>
-        {% endif %}
-    </ul>
-{% endif %}
+    </p>
+{% endblock %}
 
+{% block action_list %}
+    {% if deleteRef|default('') or cloneRef|default('') or editRef|default('') or CurrentEventLink|default('') %}
+        <ul class="CalendarEditActionList">
+            {% if CurrentEventLink|default('') %}
+                <li class="viewlink"><a href="{{ CurrentEventLink }}"
+                                        title="{{ CurrentTitle|default('') }}"> {{ 'MSC.caledit_viewLabel'|trans({}, 'contao_default') }} </a>
+                </li>
+            {% endif %}
+            {% if editRef|default('') %}
+                <li class="editlink"><a href="{{ editRef }}"
+                                        title="{{ editTitle|default('') }}"> {{ editLabel|default('') }} </a></li>
+            {% endif %}
+            {% if cloneRef|default('') %}
+                <li class="clonelink"><a href="{{ cloneRef }}"
+                                         title="{{ cloneTitle|default('') }}"> {{ cloneLabel|default('') }} </a></li>
+            {% endif %}
+            {% if deleteRef|default('') %}
+                <li class="deletelink"><a href="{{ deleteRef }}"
+                                          title="{{ deleteTitle|default('') }}"> {{ deleteLabel|default('') }} </a></li>
+            {% endif %}
+        </ul>
+    {% endif %}
+{% endblock %}
+
+{% block form_container %}
     {% if fields is not defined or not fields %}
         <h2>{{ 'MSC.caledit_InsertEventData'|trans({}, 'contao_default') }}</h2>
         <p class="error">{{ FatalError|default('') }}</p>
@@ -58,73 +70,85 @@
             {% endif %}
 
             <div class="formbody">
-                <form action="{{ action }}" method="post">
-                    <input type="hidden" name="FORM_SUBMIT" value="caledit_submit"/>
-                    {{ messages|raw }}
-                    <input type="hidden" name="REQUEST_TOKEN" value="{{ requestToken }}">
-
-                    {% if fields.startDate is defined and fields.startDate %}
-                        {{ fields.startDate.parse()|raw }}
-                    {% endif %}
-
-                    {% if fields.endDate is defined and fields.endDate %}
-                        {{ fields.endDate.parse()|raw }}
-                    {% endif %}
-
-                    {% if fields.startTime is defined and fields.startTime %}
-                        {{ fields.startTime.parse()|raw }}
-                    {% endif %}
-
-                    {% if fields.endTime is defined and fields.endTime %}
-                        {{ fields.endTime.parse()|raw }}
-                    {% endif %}
-
-                    {% if fields.title is defined and fields.title %}
-                        {{ fields.title.parse()|raw }}
-                    {% endif %}
-
-                    {% if fields.cssClass is defined and fields.cssClass %}
-                        {{ fields.cssClass.parse()|raw }}
-                    {% endif %}
-
-                    {% if fields.location is defined and fields.location %}
-                        {{ fields.location.parse()|raw }}
-                    {% endif %}
-
-                    {% if fields.teaser is defined and fields.teaser %}
-                        {{ fields.teaser.parse()|raw }}
-                    {% endif %}
-
-                    {% if fields.details is defined and fields.details %}
-                        {{ fields.details.parse()|raw }}
-                    {% endif %}
-
-                    {% if fields.published is defined and fields.published %}
-                        {{ fields.published.parse()|raw }}
-                    {% endif %}
-
-                    {% if fields.saveAs is defined and fields.saveAs %}
-                        {{ fields.saveAs.parse()|raw }}
-                    {% endif %}
-
-                    {% if fields.pid is defined and fields.pid %}
-                        {{ fields.pid.parse()|raw }}
-                    {% endif %}
-
-                    {% if fields.captcha is defined and fields.captcha %}
-                        {{ fields.captcha.parse()|raw }}
-                    {% endif %}
-
-                    {% if fields.jumpToSelection is defined and fields.jumpToSelection %}
-                        {{ fields.jumpToSelection.parse()|raw }}
-                    {% endif %}
-
-                    <div>
-                        <input type="submit" class="submit" value="{{ submit }}"/>
-                    </div>
-                </form>
+                {{ block('event_form') }}
             </div>
         </div>
     {% endif %}
-</div>
+{% endblock %}
+
+{% block event_form %}
+    <form action="{{ action }}" method="post">
+        <input type="hidden" name="FORM_SUBMIT" value="caledit_submit"/>
+        {{ messages|raw }}
+        <input type="hidden" name="REQUEST_TOKEN" value="{{ requestToken }}">
+
+        {{ block('event_fields') }}
+
+        {{ block('submit_container') }}
+    </form>
+{% endblock %}
+
+{% block event_fields %}
+    {% if fields.startDate is defined and fields.startDate %}
+        {{ fields.startDate.parse()|raw }}
+    {% endif %}
+
+    {% if fields.endDate is defined and fields.endDate %}
+        {{ fields.endDate.parse()|raw }}
+    {% endif %}
+
+    {% if fields.startTime is defined and fields.startTime %}
+        {{ fields.startTime.parse()|raw }}
+    {% endif %}
+
+    {% if fields.endTime is defined and fields.endTime %}
+        {{ fields.endTime.parse()|raw }}
+    {% endif %}
+
+    {% if fields.title is defined and fields.title %}
+        {{ fields.title.parse()|raw }}
+    {% endif %}
+
+    {% if fields.cssClass is defined and fields.cssClass %}
+        {{ fields.cssClass.parse()|raw }}
+    {% endif %}
+
+    {% if fields.location is defined and fields.location %}
+        {{ fields.location.parse()|raw }}
+    {% endif %}
+
+    {% if fields.teaser is defined and fields.teaser %}
+        {{ fields.teaser.parse()|raw }}
+    {% endif %}
+
+    {% if fields.details is defined and fields.details %}
+        {{ fields.details.parse()|raw }}
+    {% endif %}
+
+    {% if fields.published is defined and fields.published %}
+        {{ fields.published.parse()|raw }}
+    {% endif %}
+
+    {% if fields.saveAs is defined and fields.saveAs %}
+        {{ fields.saveAs.parse()|raw }}
+    {% endif %}
+
+    {% if fields.pid is defined and fields.pid %}
+        {{ fields.pid.parse()|raw }}
+    {% endif %}
+
+    {% if fields.captcha is defined and fields.captcha %}
+        {{ fields.captcha.parse()|raw }}
+    {% endif %}
+
+    {% if fields.jumpToSelection is defined and fields.jumpToSelection %}
+        {{ fields.jumpToSelection.parse()|raw }}
+    {% endif %}
+{% endblock %}
+
+{% block submit_container %}
+    <div>
+        <input type="submit" class="submit" value="{{ submit }}"/>
+    </div>
+{% endblock %}
 

@@ -60,7 +60,7 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
 
         $this->setFragmentOptions([
             'type' => 'EventReaderEditLink',
-            'template' => 'frontend_module/event_reader_edit_link'
+            'template' => $this->model->customTpl ?: 'frontend_module/event_reader_edit_link'
         ]);
 
         return $this->__invoke($request, $this->model, 'main')->getContent();
