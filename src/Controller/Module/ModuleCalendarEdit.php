@@ -269,7 +269,13 @@ class ModuleCalendarEdit extends ModuleCalendar
             return $objTemplate->parse();
         }
 
-        $this->cal_ctemplate = $this->model->cal_template ?: 'frontend_module/event_edit_calendar';
+        $this->cal_ctemplate = $this->model->cal_ctemplate ?: ($this->model->cal_template ?: 'frontend_module/cal_default_edit');
+
+        // Fallback for suspected wrong template selection (standard event templates)
+        if (in_array($this->cal_ctemplate, ['event_full', 'event_teaser', 'event_list', 'event_upcoming'])) {
+            $this->cal_ctemplate = 'frontend_module/cal_default_edit';
+        }
+
         $this->strTemplate = $this->model->customTpl ?: 'mod_calendar';
         return parent::generate();
     }

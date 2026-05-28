@@ -340,7 +340,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
         // Map headline and hl to template
         $headline = StringUtil::deserialize($model->headline);
-        $this->Template->headline = is_array($headline) ? $headline['value'] : $model->headline;
+        $this->Template->headline = ['text' => is_array($headline) ? $headline['value'] : $model->headline, 'tag_name' => $model->hl ?: 'h1'];
         $this->Template->hl = $model->hl ?: 'h1';
         $this->Template->InfoMessage = '';
         $this->Template->FatalError = '';
@@ -473,6 +473,16 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         }
 
         $request = $this->requestStack->getCurrentRequest();
+
+        if ($request === null) {
+            return '';
+        }
+
+        // Set fragment options to avoid automatic type derivation from class name
+        $this->setFragmentOptions([
+            'type' => 'EventEditor',
+            'template' => 'frontend_module/event_edit_default'
+        ]);
 
         return $this->__invoke($request, $model, 'main')->getContent();
     }
@@ -992,7 +1002,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->Template->messages = '';
         $this->Template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_saveData'] ?? 'Submit';
         $headline = StringUtil::deserialize($this->model->headline);
-        $this->Template->headline = is_array($headline) ? $headline['value'] : $this->model->headline;
+        $this->Template->headline = ['text' => is_array($headline) ? $headline['value'] : $this->model->headline, 'tag_name' => $this->model->hl ?: 'h1'];
         $this->Template->hl = $this->model->hl ?: 'h1';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
 
@@ -1470,7 +1480,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->Template->messages = '';
         $this->Template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_deleteData'] ?? 'Delete';
         $headline = StringUtil::deserialize($this->model->headline);
-        $this->Template->headline = is_array($headline) ? $headline['value'] : $this->model->headline;
+        $this->Template->headline = ['text' => is_array($headline) ? $headline['value'] : $this->model->headline, 'tag_name' => $this->model->hl ?: 'h1'];
         $this->Template->hl = $this->model->hl ?: 'h1';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
 
@@ -1594,7 +1604,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->Template->messages = '';
         $this->Template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_saveData'] ?? 'Submit';
         $headline = StringUtil::deserialize($this->model->headline);
-        $this->Template->headline = is_array($headline) ? $headline['value'] : $this->model->headline;
+        $this->Template->headline = ['text' => is_array($headline) ? $headline['value'] : $this->model->headline, 'tag_name' => $this->model->hl ?: 'h1'];
         $this->Template->hl = $this->model->hl ?: 'h1';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
 
@@ -1886,11 +1896,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         if ($editID) {
             if ($editID == -1) {
                 // Wenn ein Event gelöscht wird
-                $templateName = 'mail_event_subject_delete';
+                $templateName = 'frontend_module/mail_event_subject_delete';
                 $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectDelete'], $host);
             } else {
                 // Wenn ein Event geändert wird
-                $templateName = 'mail_event_subject_edit';
+                $templateName = 'frontend_module/mail_event_subject_edit';
                 $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectEdit'], $host);
             }
         } else {
@@ -1898,9 +1908,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             $notification->subject = $mailSubject;
         }
 
-        // Template laden und rendern mit @Contao Namespace
-        // Wir versuchen mehrere Pfade, da die Auflösung in Contao 5/6 variieren kann
-        $twig = System::getContainer()->get('twig');
+        // Template laden und rendern mit Contao-Template-System
         $templateContent = '';
         $renderData = [
             'host' => $host,
@@ -1916,33 +1924,23 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             'allowPublish' => $this->caledit_allowPublish,
         ];
 
-        // Suchreihenfolge für das Template
-        $searchTemplates = [
-            '@Contao/' . $templateName . '.html.twig',
-            $templateName . '.html.twig',
-        ];
-
-        // Falls im templateName schon frontend_module/ drin steht (Legacy-Daten), auch ohne versuchen
-        if (str_starts_with($templateName, 'frontend_module/')) {
-            $strippedName = substr($templateName, 16);
-            $searchTemplates[] = '@Contao/' . $strippedName . '.html.twig';
-            $searchTemplates[] = $strippedName . '.html.twig';
-        }
-
-        $lastException = null;
-        foreach ($searchTemplates as $path) {
-            try {
-                $templateContent = $twig->render($path, $renderData);
-                $lastException = null;
-                break;
-            } catch (\Twig\Error\LoaderError $e) {
-                $lastException = $e;
+        try {
+            $objTemplate = new FrontendTemplate($templateName);
+            $objTemplate->setData($renderData);
+            $templateContent = $objTemplate->parse();
+        } catch (\Exception $e) {
+            // Fallback für den Fall, dass frontend_module/ fehlt
+            if (!str_starts_with($templateName, 'frontend_module/')) {
+                try {
+                    $objTemplate = new FrontendTemplate('frontend_module/' . $templateName);
+                    $objTemplate->setData($renderData);
+                    $templateContent = $objTemplate->parse();
+                } catch (\Exception $e2) {
+                    throw new RuntimeException('Could not find or render template ' . $templateName, 0, $e2);
+                }
+            } else {
+                throw new RuntimeException('Could not find or render template ' . $templateName, 0, $e);
             }
-        }
-
-        if ($lastException) {
-            // Wenn gar kein Template gefunden wurde, werfen wir den Fehler erneut oder nutzen einen Fallback-Text
-            throw $lastException;
         }
 
         $notification->text = $templateContent;

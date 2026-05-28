@@ -22,7 +22,7 @@ use Diversworld\CalendarEditorBundle\Dca\ModuleDca;
  * Add palettes to tl_module
  */
 
-$GLOBALS['TL_DCA']['tl_module']['palettes']['calendarEdit'] = $GLOBALS['TL_DCA']['tl_module']['palettes']['calendar'] . ';{edit_legend},cal_template,caledit_add_jumpTo; {edit_holidays},cal_holidayCalendar';
+$GLOBALS['TL_DCA']['tl_module']['palettes']['calendarEdit'] = $GLOBALS['TL_DCA']['tl_module']['palettes']['calendar'] . ';{edit_legend},cal_ctemplate,cal_template,caledit_add_jumpTo; {edit_holidays},cal_holidayCalendar';
 $GLOBALS['TL_DCA']['tl_module']['palettes']['EventReaderEditLink'] = '{title_legend},name,headline,type;{config_legend},cal_calendar,caledit_showDeleteLink,caledit_showCloneLink';
 $GLOBALS['TL_DCA']['tl_module']['palettes']['EventHiddenList']     = $GLOBALS['TL_DCA']['tl_module']['palettes']['eventlist'];
 $GLOBALS['TL_DCA']['tl_module']['palettes']['EventEditor']         = '{title_legend},name,headline,type;{redirect_legend},jumpTo;'

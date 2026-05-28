@@ -54,6 +54,15 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
         $this->initializeServices();
         $request = System::getContainer()->get('request_stack')->getCurrentRequest();
 
+        if ($request === null) {
+            return '';
+        }
+
+        $this->setFragmentOptions([
+            'type' => 'EventReaderEditLink',
+            'template' => 'frontend_module/event_reader_edit_link'
+        ]);
+
         return $this->__invoke($request, $this->model, 'main')->getContent();
     }
 
@@ -94,7 +103,7 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
 
         $template->editRef = '';
         $headline = StringUtil::deserialize($model->headline);
-        $template->headline = is_array($headline) ? $headline['value'] : $model->headline;
+        $template->headline = ['text' => is_array($headline) ? $headline['value'] : $model->headline, 'tag_name' => $model->hl ?: 'h1'];
         $template->hl = $model->hl ?: 'h1';
         $user = $this->security->getUser();
 

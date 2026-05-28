@@ -109,7 +109,7 @@ class CheckAuthService
             );
     }
 
-    public function EditLinksAreAllowed2($calendar, $event, FrontendUser|null $user = null, bool $isUserAdmin, bool $isUserMember): bool
+    public function EditLinksAreAllowed2($calendar, $event, bool $isUserAdmin, bool $isUserMember, FrontendUser|null $user = null): bool
     {
         $tokenChecker = System::getContainer()->get('contao.security.token_checker');
 

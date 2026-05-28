@@ -27,6 +27,20 @@ class ModuleDca
         return $this->getTwigTemplates('event_edit_');
     }
 
+    #[AsCallback(table: 'tl_module', target: 'fields.cal_template.options')]
+    public function getEventTemplates(): array
+    {
+        $templates = $this->getTwigTemplates('event_');
+        $calTemplates = $this->getTwigTemplates('cal_');
+        return array_merge($templates, $calTemplates);
+    }
+
+    #[AsCallback(table: 'tl_module', target: 'fields.cal_ctemplate.options')]
+    public function getCalendarGridTemplates(): array
+    {
+        return $this->getTwigTemplates('cal_');
+    }
+
     #[AsCallback(table: 'tl_module', target: 'fields.caledit_mailTemplate.options')]
     public function getEventMailTemplates(): array
     {

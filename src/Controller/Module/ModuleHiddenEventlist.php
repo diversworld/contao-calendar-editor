@@ -49,6 +49,15 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
         $this->initializeServices();
         $request = System::getContainer()->get('request_stack')->getCurrentRequest();
 
+        if ($request === null) {
+            return '';
+        }
+
+        $this->setFragmentOptions([
+            'type' => 'EventHiddenList',
+            'template' => 'frontend_module/event_list_hidden'
+        ]);
+
         return $this->__invoke($request, $this->model, 'main')->getContent();
     }
 
@@ -73,7 +82,7 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
         $this->model = $model;
 
         $headline = StringUtil::deserialize($model->headline);
-        $template->headline = is_array($headline) ? $headline['value'] : $model->headline;
+        $template->headline = ['text' => is_array($headline) ? $headline['value'] : $model->headline, 'tag_name' => $model->hl ?: 'h1'];
         $template->hl = $model->hl ?: 'h1';
 
         // This is a simplified version, ideally we would use the logic from ModuleEventlist

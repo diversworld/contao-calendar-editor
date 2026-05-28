@@ -1,6 +1,7 @@
 <div class="mod_EventEditor block">
-    {% if headline|default('') %}
-    <{{ hl|default('h1') }}>{{ headline }}</{{ hl|default('h1') }}>
+    {% set headlineText = headline is iterable ? headline.text|default('') : headline %}
+    {% if headlineText|default('') %}
+    <{{ hl|default('h1') }}>{{ headlineText }}</{{ hl|default('h1') }}>
 {% endif %}
 
 <p class="error">
