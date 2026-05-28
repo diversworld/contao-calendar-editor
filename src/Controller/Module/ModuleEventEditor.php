@@ -467,10 +467,17 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             return '';
         }
 
+        $template = $model->customTpl ?: ($model->caledit_template ?: 'frontend_module/event_edit_default');
+
+        // Ensure prefix for bundle templates if missing
+        if ($template && !str_contains($template, '/') && (str_starts_with($template, 'event_edit_') || str_starts_with($template, 'mail_event_'))) {
+            $template = 'frontend_module/' . $template;
+        }
+
         // Set fragment options to avoid automatic type derivation from class name
         $this->setFragmentOptions([
             'type' => 'EventEditor',
-            'template' => $model->customTpl ?: ($model->caledit_template ?: 'frontend_module/event_edit_default')
+            'template' => $template
         ]);
 
         return $this->__invoke($request, $model, 'main')->getContent();

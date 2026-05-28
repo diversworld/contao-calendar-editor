@@ -271,8 +271,13 @@ class ModuleCalendarEdit extends ModuleCalendar
 
         $this->cal_ctemplate = $this->model->cal_ctemplate ?: ($this->model->cal_template ?: 'frontend_module/cal_default_edit');
 
+        // Ensure prefix for bundle templates if missing
+        if ($this->cal_ctemplate && !str_contains($this->cal_ctemplate, '/') && (str_starts_with($this->cal_ctemplate, 'cal_') || str_starts_with($this->cal_ctemplate, 'event_'))) {
+            $this->cal_ctemplate = 'frontend_module/' . $this->cal_ctemplate;
+        }
+
         // Fallback for suspected wrong template selection (standard event templates)
-        if (in_array($this->cal_ctemplate, ['event_full', 'event_teaser', 'event_list', 'event_upcoming'])) {
+        if (in_array($this->cal_ctemplate, ['frontend_module/event_full', 'frontend_module/event_teaser', 'frontend_module/event_list', 'frontend_module/event_upcoming'])) {
             $this->cal_ctemplate = 'frontend_module/cal_default_edit';
         }
 

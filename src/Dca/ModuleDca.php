@@ -52,7 +52,7 @@ class ModuleDca
         $templates = $this->framework->getAdapter(Controller::class)->getTemplateGroup($prefix);
 
         // Scan bundle templates in frontend_module subfolder
-        $templateDir = dirname(__DIR__, 2) . '/contao/templates/frontend_module';
+        $templateDir = dirname(__DIR__, 2) . '/templates/frontend_module';
         if (is_dir($templateDir)) {
             $files = scandir($templateDir);
             foreach ($files as $file) {
