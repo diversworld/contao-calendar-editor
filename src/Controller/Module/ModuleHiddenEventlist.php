@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Psr\Log\LoggerInterface;
 
-#[AsFrontendModule('EventHiddenList', category: 'calendar', template: 'mod_eventlist')]
+#[AsFrontendModule('EventHiddenList', category: 'calendar', template: 'frontend_module/event_list_hidden')]
 class ModuleHiddenEventlist extends AbstractFrontendModuleController
 {
     /**

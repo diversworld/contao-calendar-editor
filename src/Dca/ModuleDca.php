@@ -24,7 +24,7 @@ class ModuleDca
     #[AsCallback(table: 'tl_module', target: 'fields.caledit_delete_template.options')]
     public function getEventEditTemplates(): array
     {
-        return $this->getTwigTemplates('eventEdit_');
+        return $this->getTwigTemplates('event_edit_');
     }
 
     #[AsCallback(table: 'tl_module', target: 'fields.caledit_mailTemplate.options')]
@@ -33,31 +33,12 @@ class ModuleDca
         return $this->getTwigTemplates('mail_event_');
     }
 
-    #[AsCallback(table: 'tl_module', target: 'fields.cal_template.options')]
-    public function getCalendarTemplates(): array
-    {
-        return $this->getTwigTemplates('cal_');
-    }
-
     private function getTwigTemplates(string $prefix): array
     {
         $templates = $this->framework->getAdapter(Controller::class)->getTemplateGroup($prefix);
 
-        // Scan bundle templates in root
-        $templateRoot = dirname(__DIR__, 2) . '/contao/templates';
-        if (is_dir($templateRoot)) {
-            $files = scandir($templateRoot);
-            foreach ($files as $file) {
-                if (str_starts_with($file, $prefix) && str_ends_with($file, '.html.twig')) {
-                    $name = substr($file, 0, -10);
-                    $templates[$name] = $name;
-                }
-            }
-        }
-
         // Scan bundle templates in frontend_module subfolder
-        $templateDir = $templateRoot . '/frontend_module';
-
+        $templateDir = dirname(__DIR__, 2) . '/contao/templates/frontend_module';
         if (is_dir($templateDir)) {
             $files = scandir($templateDir);
             foreach ($files as $file) {

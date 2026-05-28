@@ -18,7 +18,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bundle\SecurityBundle\Security;
 
-#[AsFrontendModule('EventReaderEditLink', category: 'calendar', template: 'frontend_module/mod_event_ReaderEditLink')]
+#[AsFrontendModule('EventReaderEditLink', category: 'calendar', template: 'frontend_module/event_reader_edit_link')]
 class ModuleEventReaderEdit extends AbstractFrontendModuleController
 {
     /**

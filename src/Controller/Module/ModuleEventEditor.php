@@ -37,7 +37,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Psr\Log\LoggerInterface;
 
-#[AsFrontendModule('EventEditor', category: 'calendar', template: 'frontend_module/eventEdit_default')]
+#[AsFrontendModule('EventEditor', category: 'calendar', template: 'frontend_module/event_edit_default')]
 class ModuleEventEditor extends AbstractFrontendModuleController
 {
     /**
@@ -243,7 +243,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
     /**
      * @var string
      */
-    protected $strTemplate = 'frontend_module/eventEdit_default';
+    protected $strTemplate = 'frontend_module/event_edit_default';
 
     /**
      * @var string
@@ -1443,7 +1443,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
         $currentRequest = $this->requestStack->getCurrentRequest();
 
-        $this->strTemplate = $this->caledit_delete_template ?: 'frontend_module/eventEdit_delete';
+        $this->strTemplate = $this->caledit_delete_template ?: 'frontend_module/event_edit_delete';
         $this->Template->setName($this->strTemplate);
 
         // Initialize all template variables to avoid Twig errors
@@ -1567,7 +1567,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->initializeServices();
         $currentRequest = $this->requestStack->getCurrentRequest();
 
-        $this->strTemplate = $this->caledit_clone_template ?: 'frontend_module/eventEdit_duplicate';
+        $this->strTemplate = $this->caledit_clone_template ?: 'frontend_module/event_edit_duplicate';
         $this->Template->setName($this->strTemplate);
 
         // Initialize all template variables to avoid Twig errors
@@ -1920,8 +1920,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $searchTemplates = [
             '@Contao/' . $templateName . '.html.twig',
             $templateName . '.html.twig',
-            '@Contao/frontend_module/' . $templateName . '.html.twig',
-            'frontend_module/' . $templateName . '.html.twig',
         ];
 
         // Falls im templateName schon frontend_module/ drin steht (Legacy-Daten), auch ohne versuchen
