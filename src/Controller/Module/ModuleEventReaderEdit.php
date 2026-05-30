@@ -94,7 +94,8 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
 
         $autoItem = $request->query->get('auto_item') ?: $request->attributes->get('_route_params')['auto_item'];
 
-        $calendars = StringUtil::deserialize($model->cal_calendar);
+        $calendars = StringUtil::deserialize($model->cal_calendar, true);
+        $calendars = array_map('\intval', $calendars);
 
         // Return if there are no calendars
         if (!is_array($calendars) || count($calendars) < 1) {
@@ -102,8 +103,18 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
         }
 
         $template->editRef = '';
+
+        $cssID = StringUtil::deserialize($model->cssID, true);
+        $template->class = trim('mod_' . $model->type . ' ' . ($model->class ?: '') . ' ' . ($cssID[1] ?? ''));
+        $template->cssID = $cssID[0] ?? '';
+        $template->type = $model->type;
+
         $headline = StringUtil::deserialize($model->headline);
-        $template->headline = ['text' => is_array($headline) ? $headline['value'] : $model->headline, 'tag_name' => $model->hl ?: 'h1'];
+        $headlineText = is_array($headline) ? $headline['value'] : $model->headline;
+        $template->headline = [
+            'text' => $headlineText,
+            'unit' => $model->hl ?: 'h1'
+        ];
         $template->hl = $model->hl ?: 'h1';
         $user = $this->security->getUser();
 
@@ -152,7 +163,7 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
                 $objPage = $pageModelAdapter->findByPk($calendarModel->caledit_jumpTo);
 
                 if ($objPage !== null) {
-                    $strUrl = $objPage->getFrontendUrl();
+                    $strUrl = System::getContainer()->get('contao.routing.content_url_generator')->generate($objPage);
 
                     $template->editRef = $strUrl . '?edit=' . $objEvent->id;
                     $template->editLabel = $GLOBALS['TL_LANG']['MSC']['caledit_editLabel'];

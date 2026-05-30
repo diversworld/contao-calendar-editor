@@ -25,7 +25,7 @@ use Diversworld\CalendarEditorBundle\Controller\Module\ModuleEventEditor;
 use Diversworld\CalendarEditorBundle\Controller\Module\ModuleEventReaderEdit;
 use Diversworld\CalendarEditorBundle\Controller\Module\ModuleHiddenEventlist;
 
-$GLOBALS['FE_MOD']['events']['calendarEdit']        = ModuleCalendarEdit::class;
+//$GLOBALS['FE_MOD']['events']['calendarEdit']        = ModuleCalendarEdit::class;
 //$GLOBALS['FE_MOD']['events']['EventEditor'] = ModuleEventEditor::class;
 //$GLOBALS['FE_MOD']['events']['EventReaderEditLink'] = ModuleEventReaderEdit::class;
 //$GLOBALS['FE_MOD']['events']['EventHiddenList'] = ModuleHiddenEventlist::class;

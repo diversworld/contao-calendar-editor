@@ -2,6 +2,7 @@
 
 namespace Diversworld\CalendarEditorBundle\Hooks;
 
+use Contao\System;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use Contao\PageModel;
 use Contao\FrontendUser;
@@ -61,7 +62,7 @@ class ListAllEventsHook
 
                 $page = $pageModelAdapter->findByPk($calendarModel->caledit_jumpTo);
                 if ($page !== null) {
-                    $jumpPages[$currentPid] = $page->getFrontendUrl();
+                    $jumpPages[$currentPid] = System::getContainer()->get('contao.routing.content_url_generator')->generate($page);
                 }
             } else {
                 $isUserAdminForCalendar[$currentPid] = false;

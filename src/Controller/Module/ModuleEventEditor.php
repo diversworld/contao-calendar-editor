@@ -35,7 +35,6 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
-use Psr\Log\LoggerInterface;
 
 #[AsFrontendModule('EventEditor', category: 'calendar', template: 'frontend_module/event_edit_default')]
 class ModuleEventEditor extends AbstractFrontendModuleController
@@ -245,7 +244,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         private CheckAuthService|ModuleModel|null $calEditCheckAuthService = null,
         private ContaoFramework|string|null       $framework = null,
         private ?Security                         $security = null,
-        private ?LoggerInterface                  $calEditLogger = null,
         private ?ScopeMatcher                     $scopeMatcher = null,
         private ?RequestStack                     $requestStack = null,
         private ?Connection                       $connection = null,
@@ -315,6 +313,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
         $this->Template = $template;
 
+        $cssID = StringUtil::deserialize($model->cssID, true);
+        $this->Template->class = trim('mod_' . $model->type . ' ' . ($model->class ?: '') . ' ' . ($cssID[1] ?? ''));
+        $this->Template->cssID = $cssID[0] ?? '';
+        $this->Template->type = $model->type;
+
         // Ensure variables from getResponse argument $template are copied to $this->Template if it was changed
         if ($this->Template !== $template) {
             $this->Template->headline = $template->headline;
@@ -329,7 +332,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
         // Map headline and hl to template
         $headline = StringUtil::deserialize($model->headline);
-        $this->Template->headline = ['text' => is_array($headline) ? $headline['value'] : $model->headline, 'tag_name' => $model->hl ?: 'h1'];
+        $headlineText = is_array($headline) ? $headline['value'] : $model->headline;
+        $this->Template->headline = [
+            'text' => $headlineText,
+            'unit' => $model->hl ?: 'h1'
+        ];
         $this->Template->hl = $model->hl ?: 'h1';
         $this->Template->InfoMessage = '';
         $this->Template->FatalError = '';
@@ -342,15 +349,14 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
 
         // Deserialisieren und Kalender filtern
-        $this->cal_calendar = $this->sortOutProtected(StringUtil::deserialize($this->cal_calendar));
+        $this->cal_calendar = $this->sortOutProtected(StringUtil::deserialize($this->cal_calendar, true));
+        $this->cal_calendar = array_map('\intval', $this->cal_calendar);
 
         if (!is_array($this->cal_calendar) || count($this->cal_calendar) < 1) {
             return new Response('');
         }
 
         $this->allowedCalendars = $this->getCalendars($this->User);
-
-        $response = null;
 
         if ($request->query->has('edit') || $request->request->has('edit')) {
             $editID = $request->query->get('edit') ?: $request->request->get('edit');
@@ -381,10 +387,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
         return $this->Template->getResponse();
     }
-    protected function initializeLogger(): void
-    {
-        // $this->calEditLogger is already injected
-    }
 
     protected function initializeServices(): void
     {
@@ -401,7 +403,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->calEditCheckAuthService = $container->get('caledit.service.auth');
         $this->framework = $container->get('contao.framework');
         $this->security = $container->get('security.helper');
-        $this->calEditLogger = $container->get('monolog.logger.contao.general');
         $this->scopeMatcher = $container->get('contao.routing.scope_matcher');
         $this->requestStack = $container->get('request_stack');
         $this->connection = $container->get('database_connection');
@@ -969,7 +970,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
     protected function handleEdit($editID, $currentEventObject): ?Response
     {
         $this->initializeServices();
-        $this->initializeLogger();
 
         // Input über den Symfony-DI-Container beziehen
         $currentRequest = $this->requestStack->getCurrentRequest();
@@ -998,7 +998,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->Template->messages = '';
         $this->Template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_saveData'] ?? 'Submit';
         $headline = StringUtil::deserialize($this->model->headline);
-        $this->Template->headline = ['text' => is_array($headline) ? $headline['value'] : $this->model->headline, 'tag_name' => $this->model->hl ?: 'h1'];
+        $headlineText = is_array($headline) ? $headline['value'] : $this->model->headline;
+        $this->Template->headline = [
+            'text' => $headlineText,
+            'unit' => $this->model->hl ?: 'h1'
+        ];
         $this->Template->hl = $this->model->hl ?: 'h1';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
 
@@ -1476,7 +1480,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->Template->messages = '';
         $this->Template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_deleteData'] ?? 'Delete';
         $headline = StringUtil::deserialize($this->model->headline);
-        $this->Template->headline = ['text' => is_array($headline) ? $headline['value'] : $this->model->headline, 'tag_name' => $this->model->hl ?: 'h1'];
+        $headlineText = is_array($headline) ? $headline['value'] : $this->model->headline;
+        $this->Template->headline = [
+            'text' => $headlineText,
+            'unit' => $this->model->hl ?: 'h1'
+        ];
         $this->Template->hl = $this->model->hl ?: 'h1';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
 
@@ -1600,7 +1608,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->Template->messages = '';
         $this->Template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_saveData'] ?? 'Submit';
         $headline = StringUtil::deserialize($this->model->headline);
-        $this->Template->headline = ['text' => is_array($headline) ? $headline['value'] : $this->model->headline, 'tag_name' => $this->model->hl ?: 'h1'];
+        $headlineText = is_array($headline) ? $headline['value'] : $this->model->headline;
+        $this->Template->headline = [
+            'text' => $headlineText,
+            'unit' => $this->model->hl ?: 'h1'
+        ];
         $this->Template->hl = $this->model->hl ?: 'h1';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
 
