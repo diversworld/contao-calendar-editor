@@ -565,8 +565,10 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         if (NULL === $objCalendar) {
             return false;
         }
-        $tmpStartDate = strtotime($objStart->__get('value'));
-        $tmpEndDate = strtotime($objEnd->__get('value'));
+        $startVal = $objStart->__get('value');
+        $tmpStartDate = is_numeric($startVal) ? (int)$startVal : strtotime($startVal);
+        $endVal = $objEnd->__get('value');
+        $tmpEndDate = is_numeric($endVal) ? (int)$endVal : strtotime($endVal);
         if ($tmpEndDate === false) $tmpEndDate = null;
 
         if ((!$objCalendar->caledit_onlyFuture) || $this->calEditCheckAuthService->isUserAdmin($objCalendar, $this->User)) {
@@ -766,9 +768,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             $this->Template->CurrentPublishedInfo = $GLOBALS['TL_LANG']['MSC']['caledit_unpublishedEvent'];
         }
 
-        //$urlGenerator = new UrlGeneratorInterface::class;
-        //$urlGenerator = System::getContainer()->get('contao.routing.content_url_generator');
-
         // Fill fields with data from $currentEventObject
         $newEventData['startDate'] = Date::parse(Config::get('dateFormat'), $currentEventObject->startDate);
         $newEventData['endDate'] = Date::parse(Config::get('dateFormat'), $currentEventObject->endDate);
@@ -872,50 +871,39 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
         // needed later!
         $startDate = new Date($eventData['startDate'], Config::get('dateFormat'));
-
-        $eventData['tstamp'] = $startDate->tstamp;
+        $eventData['tstamp'] = time();
 
         // Dealing with empty enddates, Start/endtimes ...
         if (trim($eventData['endDate']) != '') {
-            // an enddate is given
             $endDateStr = $eventData['endDate'];
             $endDate = new Date($eventData['endDate'], Config::get('dateFormat'));
-            $eventData['endDate'] = $endDate->tstamp;
         } else {
-            // needed later
             $endDateStr = $eventData['startDate'];
-            // $endDate = $startDate;
-            // no enddate is given. => Set it to NULL
-            $eventData['endDate'] = NULL;
+            $endDate = $startDate;
         }
 
         $startTimeStr = $eventData['startTime'];
-        if (trim($eventData['startTime']) == '') {
-            // Dont add time
-            $useTime = false;
+        $endTimeStr = $eventData['endTime'];
+
+        if (trim($startTimeStr) == '') {
             $eventData['addTime'] = '';
             $eventData['startTime'] = $startDate->tstamp;
+            $eventData['endTime'] = $endDate->tstamp;
         } else {
-            // Add time to the event
-            $useTime = true;
             $eventData['addTime'] = '1';
-            $startTime = new Date($eventData['startDate'] . ' ' . $eventData['startTime'], Config::get('dateFormat') . ' ' . Config::get('timeFormat'));
+            $startTime = new Date($eventData['startDate'] . ' ' . $startTimeStr, Config::get('dateFormat') . ' ' . Config::get('timeFormat'));
             $eventData['startTime'] = $startTime->tstamp;
+
+            if (trim($endTimeStr) == '') {
+                $endTimeStr = $startTimeStr;
+            }
+
+            $endTime = new Date($endDateStr . ' ' . $endTimeStr, Config::get('dateFormat') . ' ' . Config::get('timeFormat'));
+            $eventData['endTime'] = $endTime->tstamp;
         }
 
         $eventData['startDate'] = $startDate->tstamp;
-
-        if (trim($eventData['endTime']) == '') {
-            // if no endtime is given: set endtime = starttime
-            $dateString = $endDateStr . ' ' . $startTimeStr;
-        } else {
-            if (!$useTime) {
-                $eventData['endTime'] = strtotime($endDateStr . ' ' . $eventData['endTime']);
-            }
-            $dateString = $endDateStr . ' ' . $eventData['endTime'];
-        }
-        $endTime = new Date($dateString, Config::get('datimFormat'));
-        $eventData['endTime'] = $endTime->tstamp;
+        $eventData['endDate'] = $endDate->tstamp;
 
 
         // Hier: Hooks mit $eventData aufrufen
@@ -1797,7 +1785,8 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $allDatesAllowed = $this->allDatesAllowed($currentEventData['pid']);
         for ($i = 1; $i <= 10; $i++) {
             // check the 10 startdates
-            $newDate = strtotime($arrWidgets['start' . $i]->__get('value'));
+            $val = $arrWidgets['start' . $i]->__get('value');
+            $newDate = is_numeric($val) ? (int)$val : strtotime($val);
 
             if ((!$allDatesAllowed) and ($newDate) and ($newDate < time())) {
                 $arrWidgets['start' . $i]->addError($GLOBALS['TL_LANG']['MSC']['caledit_formErrorElapsedDate']);
