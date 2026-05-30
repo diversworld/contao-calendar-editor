@@ -909,8 +909,8 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         // Hier: Hooks mit $eventData aufrufen
         if (array_key_exists('prepareCalendarEditData', $GLOBALS['TL_HOOKS']) && is_array($GLOBALS['TL_HOOKS']['prepareCalendarEditData'])) {
             foreach ($GLOBALS['TL_HOOKS']['prepareCalendarEditData'] as $callback) {
-                $this->import($callback[0]);
-                $eventData = $this->{$callback[0]}->{$callback[1]}($eventData);
+                $hookObject = is_string($callback[0]) ? (System::getContainer()->has($callback[0]) ? System::getContainer()->get($callback[0]) : System::importStatic($callback[0])) : $callback[0];
+                $eventData = $hookObject->{$callback[1]}($eventData);
             }
         }
 
@@ -1363,8 +1363,8 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
         if (array_key_exists('buildCalendarEditForm', $GLOBALS['TL_HOOKS']) && is_array($GLOBALS['TL_HOOKS']['buildCalendarEditForm'])) {
             foreach ($GLOBALS['TL_HOOKS']['buildCalendarEditForm'] as $callback) {
-                $this->import($callback[0]);
-                $arrResult = $this->{$callback[0]}->{$callback[1]}($newEventData, $fields, $currentEventObject, $editID);
+                $hookObject = is_string($callback[0]) ? (System::getContainer()->has($callback[0]) ? System::getContainer()->get($callback[0]) : System::importStatic($callback[0])) : $callback[0];
+                $arrResult = $hookObject->{$callback[1]}($newEventData, $fields, $currentEventObject, $editID);
                 if (is_array($arrResult) && count($arrResult) > 1) {
                     $newEventData = $arrResult['NewEventData'];
                     $fields = $arrResult['fields'];
@@ -1731,8 +1731,8 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         // here: CALL Hooks with $NewEventData, $currentEventObject, $fields
         if (array_key_exists('buildCalendarCloneForm', $GLOBALS['TL_HOOKS']) && is_array($GLOBALS['TL_HOOKS']['buildCalendarCloneForm'])) {
             foreach ($GLOBALS['TL_HOOKS']['buildCalendarCloneForm'] as $callback) {
-                $this->import($callback[0]);
-                $arrResult = $this->{$callback[0]}->{$callback[1]}($newDates, $fields, $currentEventObject, $currentID);
+                $hookObject = is_string($callback[0]) ? (System::getContainer()->has($callback[0]) ? System::getContainer()->get($callback[0]) : System::importStatic($callback[0])) : $callback[0];
+                $arrResult = $hookObject->{$callback[1]}($newDates, $fields, $currentEventObject, $currentID);
                 if (is_array($arrResult) && count($arrResult) > 1) {
                     $newDates = $arrResult['newDates'];
                     $fields = $arrResult['fields'];

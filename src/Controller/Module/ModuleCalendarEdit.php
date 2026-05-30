@@ -247,6 +247,12 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
         $intColumnCount = -1;
         $intNumberOfRows = ceil(($intDaysInMonth + $intFirstDayOffset) / 7);
 
+        $moduleProxy = new class($this->model) extends \Contao\Module {
+            protected function compile(): void
+            {
+            }
+        };
+
         $calendarEventsGenerator = System::getContainer()->get('contao_calendar.generator.calendar_events');
         $allEvents = $calendarEventsGenerator->getAllEvents(
             $this->cal_calendar,
@@ -255,28 +261,8 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
             null,
             $this->cal_noSpan,
             null,
-            null
+            $moduleProxy
         );
-
-        // HOOK: modify the result set (manually because we passed null to getAllEvents)
-        if (isset($GLOBALS['TL_HOOKS']['getAllEvents']) && \is_array($GLOBALS['TL_HOOKS']['getAllEvents'])) {
-            foreach ($GLOBALS['TL_HOOKS']['getAllEvents'] as $callback) {
-                $hookObject = null;
-                if (is_string($callback[0])) {
-                    if (System::getContainer()->has($callback[0])) {
-                        $hookObject = System::getContainer()->get($callback[0]);
-                    } else {
-                        $hookObject = System::importStatic($callback[0]);
-                    }
-                } elseif (is_object($callback[0])) {
-                    $hookObject = $callback[0];
-                }
-
-                if ($hookObject) {
-                    $allEvents = $hookObject->{$callback[1]}($allEvents, $this->cal_calendar, $this->Date->monthBegin, $this->Date->monthEnd, null);
-                }
-            }
-        }
 
         $arrDays = [];
 
