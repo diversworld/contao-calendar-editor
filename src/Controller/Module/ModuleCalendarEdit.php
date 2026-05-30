@@ -261,7 +261,20 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
         // HOOK: modify the result set (manually because we passed null to getAllEvents)
         if (isset($GLOBALS['TL_HOOKS']['getAllEvents']) && \is_array($GLOBALS['TL_HOOKS']['getAllEvents'])) {
             foreach ($GLOBALS['TL_HOOKS']['getAllEvents'] as $callback) {
-                $allEvents = System::importStatic($callback[0])->{$callback[1]}($allEvents, $this->cal_calendar, $this->Date->monthBegin, $this->Date->monthEnd, null);
+                $hookObject = null;
+                if (is_string($callback[0])) {
+                    if (System::getContainer()->has($callback[0])) {
+                        $hookObject = System::getContainer()->get($callback[0]);
+                    } else {
+                        $hookObject = System::importStatic($callback[0]);
+                    }
+                } elseif (is_object($callback[0])) {
+                    $hookObject = $callback[0];
+                }
+
+                if ($hookObject) {
+                    $allEvents = $hookObject->{$callback[1]}($allEvents, $this->cal_calendar, $this->Date->monthBegin, $this->Date->monthEnd, null);
+                }
             }
         }
 
@@ -330,9 +343,11 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
                     if (in_array($vv['parent'], $validHolidays)) {
                         $holidayEvents[] = $vv;
                     } else {
-                        $vv['editRef'] = $addUrl . '?edit=' . $vv['id'];
-                        $vv['editTitle'] = $GLOBALS['TL_LANG']['MSC']['caledit_editTitle'];
-                        $vv['editLabel'] = $GLOBALS['TL_LANG']['MSC']['caledit_editLabel'];
+                        if (empty($vv['editRef'])) {
+                            $vv['editRef'] = $addUrl ? $addUrl . '?edit=' . $vv['id'] : '';
+                        }
+                        $vv['editTitle'] = $vv['editTitle'] ?? $GLOBALS['TL_LANG']['MSC']['caledit_editTitle'];
+                        $vv['editLabel'] = $vv['editLabel'] ?? $GLOBALS['TL_LANG']['MSC']['caledit_editLabel'];
                         $events[] = $vv;
                     }
                 }

@@ -1,3 +1,6 @@
+{% extends "@Contao/frontend_module/_base.html.twig" %}
+
+{% block content %}
 <div class="event layout_upcoming{{ classUpcoming }}">
     <span class="date">{{ date }}</span>
     <a href="{{ href }}"
@@ -13,3 +16,4 @@
         </span>
     {% endif %}
 </div>
+{% endblock %}

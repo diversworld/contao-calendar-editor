@@ -17,7 +17,7 @@ use Contao\CoreBundle\Twig\FragmentTemplate;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-#[AsFrontendModule('EventHiddenList', category: 'calendar', template: 'frontend_module/event_list_hidden')]
+#[AsFrontendModule('EventHiddenList', category: 'calendar', template: 'frontend_module/mod_event_list_hidden')]
 class ModuleHiddenEventlist extends AbstractFrontendModuleController
 {
     /**
@@ -53,7 +53,7 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
 
         $this->setFragmentOptions([
             'type' => 'EventHiddenList',
-            'template' => $this->model->customTpl ?: 'frontend_module/event_list_hidden'
+            'template' => $this->model->customTpl ?: 'frontend_module/mod_event_list_hidden'
         ]);
 
         return $this->__invoke($request, $this->model, 'main')->getContent();
@@ -96,7 +96,7 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
             return $template->getResponse();
         }
 
-        $events = [];
+        $hiddenEvents = [];
         $calendarModels = CalendarModel::findMultipleByIds($calendars);
 
         if ($calendarModels !== null) {
@@ -105,17 +105,18 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
             $end = 2147483647;
 
             foreach ($calendarModels as $calendar) {
-                $objEvents = self::findCurrentUnPublishedByPid($calendar->id, $start, $end);
+                $objEvents = self::findCurrentUnPublishedByPid((int)$calendar->id, $start, $end);
 
                 if ($objEvents !== null) {
-                    while ($objEvents->next()) {
-                        $events[] = $this->renderEvent($objEvents->current(), $calendar, $model);
+                    foreach ($objEvents as $objEvent) {
+                        $hiddenEvents[] = $this->renderEvent($objEvent, $calendar, $model);
                     }
                 }
             }
         }
 
-        $template->events = $events;
+        $template->events = $hiddenEvents;
+        $template->hiddenEvents = $hiddenEvents;
         $template->emptyMsg = $GLOBALS['TL_LANG']['MSC']['emptyEventList'] ?? 'No events found.';
 
         return $template->getResponse();
@@ -147,17 +148,21 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
             }
         }
 
-        $eventTemplate = $model->cal_template ?: 'event_list_hidden_layout';
+        $templateName = $model->cal_template ?: 'event_list_hidden_layout';
 
-        // Prefix for Twig templates if necessary
-        if (!str_contains($eventTemplate, '/')) {
-            $eventTemplate = 'frontend_module/' . $eventTemplate;
-        }
-
-        // Try to render the template. Fallback to our internal layout if the selected one doesn't exist
+        // 1. Try with @Contao prefix directly (handles core templates and prefixed bundle templates)
         try {
-            return $this->renderView("@Contao/$eventTemplate.html.twig", $data);
+            return $this->renderView("@Contao/$templateName.html.twig", $data);
         } catch (\Exception $e) {
+            // 2. Try with frontend_module/ prefix if not present
+            if (!str_contains($templateName, '/')) {
+                try {
+                    return $this->renderView("@Contao/frontend_module/$templateName.html.twig", $data);
+                } catch (\Exception $ee) {
+                    // Ignore
+                }
+            }
+            // 3. Final fallback
             return $this->renderView("@Contao/frontend_module/event_list_hidden_layout.html.twig", $data);
         }
     }

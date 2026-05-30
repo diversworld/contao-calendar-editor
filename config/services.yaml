@@ -14,5 +14,8 @@ services:
     alias: Diversworld\CalendarEditorBundle\Services\CheckAuthService
     public: true
 
+  Diversworld\CalendarEditorBundle\Hooks\ListAllEventsHook:
+    public: true
+
   Diversworld\CalendarEditorBundle\Dca\ModuleDca:
     public: true
