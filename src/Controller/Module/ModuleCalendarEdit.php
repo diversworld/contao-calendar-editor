@@ -126,7 +126,7 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
             $month = substr($month, 4, 2);
         }
 
-        if (!$year || !$month || !preg_match('/^\d{4}$/', (string) $year) || !preg_match('/^\d{1,2}$/', (string) $month)) {
+        if (!$year || !$month || !preg_match('/^\d{4}$/', (string)$year) || !preg_match('/^\d{1,2}$/', (string)$month)) {
             $year = date('Y');
             $month = date('m');
         }
@@ -136,8 +136,8 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
         // Prefixes logic
         $this->cal_ctemplate = $model->cal_ctemplate ?: 'cal_default_edit';
 
-        $intYear = (int) date('Y', $this->Date->tstamp);
-        $intMonth = (int) date('m', $this->Date->tstamp);
+        $intYear = (int)date('Y', $this->Date->tstamp);
+        $intMonth = (int)date('m', $this->Date->tstamp);
 
         $prevMonth = ($intMonth === 1) ? 12 : ($intMonth - 1);
         $prevYear = ($intMonth === 1) ? ($intYear - 1) : $intYear;
@@ -148,8 +148,8 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
         $nextLabel = ($GLOBALS['TL_LANG']['MONTHS'][$nextMonth - 1] ?? Date::parse('F', mktime(0, 0, 0, $nextMonth, 1, $nextYear))) . ' ' . $nextYear;
 
         $subTemplateData = [
-            'prevHref' => $request->getPathInfo() . '?month=' . $prevYear . str_pad((string) $prevMonth, 2, '0', STR_PAD_LEFT),
-            'nextHref' => $request->getPathInfo() . '?month=' . $nextYear . str_pad((string) $nextMonth, 2, '0', STR_PAD_LEFT),
+            'prevHref' => $request->getPathInfo() . '?month=' . $prevYear . str_pad((string)$prevMonth, 2, '0', STR_PAD_LEFT),
+            'nextHref' => $request->getPathInfo() . '?month=' . $nextYear . str_pad((string)$nextMonth, 2, '0', STR_PAD_LEFT),
             'prevTitle' => $previousLabel,
             'nextTitle' => $nextLabel,
             'prevLink' => ($GLOBALS['TL_LANG']['MSC']['cal_previous'] ?? 'Previous month') . ' ' . $previousLabel,
@@ -306,7 +306,7 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
             $page = PageModel::findByPk($calendarModel->caledit_jumpTo);
 
             if ($page !== null) {
-                $urls[(int) $calendarModel->id] = $urlGenerator->generate($page);
+                $urls[(int)$calendarModel->id] = $urlGenerator->generate($page);
             }
         }
 
@@ -468,7 +468,7 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
                             continue;
                         }
 
-                        $eventCalendarId = (int) $event['parent'];
+                        $eventCalendarId = (int)$event['parent'];
 
                         if (empty($event['editRef'])) {
                             $event['editRef'] = isset($editUrls[$eventCalendarId]) ? $editUrls[$eventCalendarId] . '?edit=' . $event['id'] : '';
