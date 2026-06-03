@@ -18,11 +18,12 @@
 
 namespace Diversworld\CalendarEditorBundle\ContaoManager;
 
-use Diversworld\CalendarEditorBundle\CalendarEditorBundle;
-
+use Contao\CalendarBundle\ContaoCalendarBundle;
+use Contao\CoreBundle\ContaoCoreBundle;
 use Contao\ManagerPlugin\Bundle\Config\BundleConfig;
 use Contao\ManagerPlugin\Bundle\BundlePluginInterface;
 use Contao\ManagerPlugin\Bundle\Parser\ParserInterface;
+use Diversworld\CalendarEditorBundle\CalendarEditorBundle;
 
 class Plugin implements BundlePluginInterface
 {
@@ -33,12 +34,9 @@ class Plugin implements BundlePluginInterface
     {
         return [
             BundleConfig::create(CalendarEditorBundle::class)
-                ->setLoadAfter(
-					[
-						'Contao\CoreBundle\ContaoCoreBundle',
-						'Contao\CalendarBundle\ContaoCalendarBundle',
-					]
-				)
+                ->setLoadAfter([
+                    ContaoCoreBundle::class,
+                    ContaoCalendarBundle::class]),
         ];
     }
 }

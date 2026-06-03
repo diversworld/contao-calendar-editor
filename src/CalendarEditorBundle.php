@@ -18,8 +18,9 @@
 
 namespace Diversworld\CalendarEditorBundle;
 
-use Symfony\Component\HttpKernel\Bundle\Bundle;
 use \Diversworld\CalendarEditorBundle\DependencyInjection\CalendarEditorExtension;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\HttpKernel\Bundle\Bundle;
 
 class CalendarEditorBundle extends Bundle
 {
@@ -31,5 +32,13 @@ class CalendarEditorBundle extends Bundle
     public function getContainerExtension(): CalendarEditorExtension
     {
         return new CalendarEditorExtension();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function build(ContainerBuilder $container): void
+    {
+        parent::build($container);
     }
 }

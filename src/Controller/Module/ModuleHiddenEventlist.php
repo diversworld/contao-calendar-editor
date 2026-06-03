@@ -14,6 +14,7 @@ use Contao\PageModel;
 use Contao\StringUtil;
 use Contao\System;
 use Contao\CoreBundle\Twig\FragmentTemplate;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -25,16 +26,16 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
      */
     protected $model;
 
+    /**
+     * @var FragmentTemplate
+     */
+    protected $Template;
+
     public function __construct(
-        private ContaoFramework|ModuleModel|null $framework = null,
-        ModuleModel|null                         $model = null,
+        private ?ContaoFramework $framework = null,
+        ModuleModel|null         $model = null,
     )
     {
-        if ($this->framework instanceof ModuleModel) {
-            $model = $this->framework;
-            $this->framework = null;
-        }
-
         if ($model !== null) {
             $this->model = $model;
         }
@@ -76,10 +77,11 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
 
     protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
     {
+        $this->Template = $template;
         $this->model = $model;
 
         $headline = StringUtil::deserialize($model->headline);
-        $template->headline = is_array($headline) ? $headline['value'] : $model->headline;
+        $template->headline = is_array($headline) ? ($headline['value'] ?? '') : $model->headline;
         $template->hl = $model->hl ?: 'h1';
 
         $cssID = StringUtil::deserialize($model->cssID, true);
@@ -134,6 +136,9 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
             'time' => $event->addTime ? Date::parse($timeFormat, $event->startTime) : '',
             'day' => Date::parse('l', $event->startTime),
             'classUpcoming' => '',
+            'editRef' => null,
+            'editTitle' => null,
+            'editLabel' => null,
         ];
 
         // Generation of edit link
@@ -150,21 +155,62 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
 
         $templateName = $model->cal_template ?: 'event_list_hidden_layout';
 
-        // 1. Try with @Contao prefix directly (handles core templates and prefixed bundle templates)
-        try {
-            return $this->renderView("@Contao/$templateName.html.twig", $data);
-        } catch (\Exception $e) {
-            // 2. Try with frontend_module/ prefix if not present
-            if (!str_contains($templateName, '/')) {
-                try {
-                    return $this->renderView("@Contao/frontend_module/$templateName.html.twig", $data);
-                } catch (\Exception $ee) {
-                    // Ignore
-                }
-            }
-            // 3. Final fallback
-            return $this->renderView("@Contao/frontend_module/event_list_hidden_layout.html.twig", $data);
+        return $this->renderEventTemplate($templateName, $data);
+    }
+
+    private function renderEventTemplate(string $templateName, array $data): string
+    {
+        $templateName = $this->normalizeTemplateName($templateName);
+
+        $aliases = [
+            'event_list_hidden' => 'event_list_hidden_layout',
+            'mod_event_list_hidden' => 'event_list_hidden_layout',
+            'frontend_module/event_list_hidden' => 'frontend_module/event_list_hidden_layout',
+            'frontend_module/mod_event_list_hidden' => 'frontend_module/event_list_hidden_layout',
+        ];
+
+        $templateName = $aliases[$templateName] ?? $templateName;
+
+        $candidates = [$templateName];
+
+        if (!str_contains($templateName, '/')) {
+            $candidates[] = 'frontend_module/' . $templateName;
         }
+
+        $lastException = null;
+
+        foreach (array_unique($candidates) as $candidate) {
+            try {
+                return $this->renderView('@Contao/' . $candidate . '.html.twig', $data);
+            } catch (\Throwable $e) {
+                $lastException = $e;
+            }
+        }
+
+        throw new RuntimeException(
+            sprintf('Could not find or render hidden event template "%s".', $templateName),
+            0,
+            $lastException
+        );
+    }
+
+    private function normalizeTemplateName(string $templateName): string
+    {
+        $templateName = trim($templateName);
+
+        if (str_starts_with($templateName, '@Contao/')) {
+            $templateName = substr($templateName, 8);
+        }
+
+        if (str_ends_with($templateName, '.html.twig')) {
+            return substr($templateName, 0, -10);
+        }
+
+        if (str_ends_with($templateName, '.html5')) {
+            return substr($templateName, 0, -6);
+        }
+
+        return $templateName;
     }
 
     public static function findCurrentUnPublishedByPid(int $pid, int $start, int $end, array $options = [])

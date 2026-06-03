@@ -241,31 +241,16 @@ class ModuleEventEditor extends AbstractFrontendModuleController
     protected $errorString = '';
 
     public function __construct(
-        private CheckAuthService|ModuleModel|null $calEditCheckAuthService = null,
-        private ContaoFramework|string|null       $framework = null,
-        private ?Security                         $security = null,
-        private ?ScopeMatcher                     $scopeMatcher = null,
-        private ?RequestStack                     $requestStack = null,
-        private ?Connection                       $connection = null,
-        ModuleModel|null                          $model = null,
+        private ?CheckAuthService $calEditCheckAuthService = null,
+        private ?ContaoFramework  $framework = null,
+        private ?Security         $security = null,
+        private ?ScopeMatcher     $scopeMatcher = null,
+        private ?RequestStack     $requestStack = null,
+        private ?Connection       $connection = null,
+        ModuleModel|null          $model = null,
     )
     {
-        if ($this->calEditCheckAuthService instanceof ModuleModel) {
-            $model = $this->checkAuthService = $this->calEditCheckAuthService;
-            $this->calEditCheckAuthService = null;
-        }
-
-        if (is_string($this->framework)) {
-            $this->framework = null;
-        }
-
         if ($model !== null) {
-            // Do not call parent::__construct($model) if $model is NOT a ModuleModel
-            // although it is typed, Contao might pass something else if we are not careful
-            // but here we check for instanceof ModuleModel above.
-
-            // AbstractFrontendModuleController does not have a constructor that takes arguments.
-            // It has a $model property.
             $this->model = $model;
         }
 
@@ -274,44 +259,42 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
     protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
     {
-        $this->initializeServices();
+        $this->Template = $template;
         $this->model = $model;
 
         // Map model properties to $this for internal method access
-        $this->id = $model->id;
-        $this->name = $model->name;
-        $this->headline = $model->headline;
-        $this->type = $model->type;
         $this->cal_calendar = $model->cal_calendar;
-        $this->customTpl = $model->customTpl;
+        $this->cal_holidayCalendar = $model->cal_holidayCalendar;
+        $this->cal_template = $model->cal_template;
         $this->caledit_sendMail = $model->caledit_sendMail;
         $this->caledit_allowPublish = $model->caledit_allowPublish;
         $this->caledit_mailRecipient = $model->caledit_mailRecipient;
         $this->caledit_mailSubject = $model->caledit_mailSubject;
         $this->caledit_mailTemplate = $model->caledit_mailTemplate;
+        $this->caledit_mandatoryfields = $model->caledit_mandatoryfields;
+        $this->caledit_add_jumpTo = $model->caledit_add_jumpTo;
+        $this->caledit_template = $model->caledit_template;
+        $this->caledit_clone_template = $model->caledit_clone_template;
+        $this->caledit_delete_template = $model->caledit_delete_template;
+        $this->caledit_tinMCEtemplate = $model->caledit_tinMCEtemplate;
+        $this->caledit_alternateCSSLabel = $model->caledit_alternateCSSLabel;
         $this->caledit_usePredefinedCss = $model->caledit_usePredefinedCss;
         $this->caledit_cssValues = $model->caledit_cssValues;
-        $this->caledit_alternateCSSLabel = $model->caledit_alternateCSSLabel;
-        $this->caledit_template = $model->caledit_template;
-        $this->caledit_delete_template = $model->caledit_delete_template;
-        $this->caledit_clone_template = $model->caledit_clone_template;
-        $this->caledit_allowDelete = $model->caledit_allowDelete;
-        $this->caledit_allowClone = $model->caledit_allowClone;
-        $this->caledit_useDatePicker = $model->caledit_useDatePicker;
-        $this->caledit_mandatoryfields = $model->caledit_mandatoryfields;
-        $this->caledit_dateIncludeCSSTheme = $model->caledit_dateIncludeCSSTheme;
-        $this->caledit_dateDirection = $model->caledit_dateDirection;
-        $this->caledit_dateImage = $model->caledit_dateImage;
-        $this->caledit_dateImageSRC = $model->caledit_dateImageSRC;
-        $this->caledit_add_jumpTo = $model->caledit_add_jumpTo;
-        $this->caledit_tinMCEtemplate = $model->caledit_tinMCEtemplate;
         $this->caledit_showDeleteLink = $model->caledit_showDeleteLink;
         $this->caledit_showCloneLink = $model->caledit_showCloneLink;
-        $this->cal_template = $model->cal_template;
-        $this->cal_holidayCalendar = $model->cal_holidayCalendar;
+        $this->caledit_useDatePicker = $model->caledit_useDatePicker;
+        $this->caledit_dateDirection = $model->caledit_dateDirection;
+        $this->caledit_dateIncludeCSSTheme = $model->caledit_dateIncludeCSSTheme;
+        $this->caledit_dateImage = $model->caledit_dateImage;
+        $this->caledit_dateImageSRC = $model->caledit_dateImageSRC;
+        $this->caledit_allowDelete = $model->caledit_allowDelete;
+        $this->caledit_allowClone = $model->caledit_allowClone;
         $this->jumpTo = $model->jumpTo;
-
-        $this->Template = $template;
+        $this->id = $model->id;
+        $this->name = $model->name;
+        $this->headline = $model->headline;
+        $this->type = $model->type;
+        $this->customTpl = $model->customTpl;
 
         $cssID = StringUtil::deserialize($model->cssID, true);
         $this->Template->class = trim('mod_' . $model->type . ' ' . ($model->class ?: '') . ' ' . ($cssID[1] ?? ''));
@@ -335,7 +318,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $headlineText = is_array($headline) ? $headline['value'] : $model->headline;
         $this->Template->headline = [
             'text' => $headlineText,
-            'unit' => $model->hl ?: 'h1'
+            'tag_name' => $model->hl ?: 'h1'
         ];
         $this->Template->hl = $model->hl ?: 'h1';
         $this->Template->InfoMessage = '';
@@ -385,7 +368,18 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             return $response;
         }
 
-        return $this->Template->getResponse();
+        // Validate template exists or use fallback for FragmentTemplate
+        $currentTemplate = $template->getName();
+        try {
+            System::getContainer()->get('twig')->load($currentTemplate);
+        } catch (\Twig\Error\LoaderError $e) {
+            $fallback = basename($currentTemplate);
+            if ($fallback !== $currentTemplate) {
+                $template->setName($fallback);
+            }
+        }
+
+        return $template->getResponse();
     }
 
     protected function initializeServices(): void
@@ -452,8 +446,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
      */
     public function generate(?ModuleModel $model = null): string
     {
-        $this->initializeServices();
-
         if ($model === null) {
             $model = $this->model;
         }
@@ -468,14 +460,22 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             return '';
         }
 
-        $template = $model->customTpl ?: ($model->caledit_template ?: 'frontend_module/event_edit_default');
+        $template = $model->customTpl ?: ($model->caledit_template ?: 'event_edit_default');
 
-        // Ensure prefix for bundle templates if missing
-        if ($template && !str_contains($template, '/') && (str_starts_with($template, 'event_edit_') || str_starts_with($template, 'mail_event_'))) {
+        if ($template && !str_contains($template, '/')) {
             $template = 'frontend_module/' . $template;
         }
 
-        // Set fragment options to avoid automatic type derivation from class name
+        if ($template && !str_ends_with($template, '.html.twig')) {
+            $template .= '.html.twig';
+        }
+
+        try {
+            $this->Template = System::getContainer()->get('twig')->load($template);
+        } catch (\Exception $e) {
+            // Fallback
+        }
+
         $this->setFragmentOptions([
             'type' => 'EventEditor',
             'template' => $template
@@ -989,7 +989,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $headlineText = is_array($headline) ? $headline['value'] : $this->model->headline;
         $this->Template->headline = [
             'text' => $headlineText,
-            'unit' => $this->model->hl ?: 'h1'
+            'tag_name' => $this->model->hl ?: 'h1'
         ];
         $this->Template->hl = $this->model->hl ?: 'h1';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
@@ -1471,7 +1471,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $headlineText = is_array($headline) ? $headline['value'] : $this->model->headline;
         $this->Template->headline = [
             'text' => $headlineText,
-            'unit' => $this->model->hl ?: 'h1'
+            'tag_name' => $this->model->hl ?: 'h1'
         ];
         $this->Template->hl = $this->model->hl ?: 'h1';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
@@ -1599,7 +1599,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $headlineText = is_array($headline) ? $headline['value'] : $this->model->headline;
         $this->Template->headline = [
             'text' => $headlineText,
-            'unit' => $this->model->hl ?: 'h1'
+            'tag_name' => $this->model->hl ?: 'h1'
         ];
         $this->Template->hl = $this->model->hl ?: 'h1';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
@@ -1954,18 +1954,4 @@ class ModuleEventEditor extends AbstractFrontendModuleController
     /**
      * Generate module
      */
-    protected function compile() : void
-    {
-    }
-
-/**
- * Import a class
- *
- * @param string $strClass
- */
-protected
-function import($strClass): void
-{
-    $this->$strClass = System::importStatic($strClass);
-    }
 }

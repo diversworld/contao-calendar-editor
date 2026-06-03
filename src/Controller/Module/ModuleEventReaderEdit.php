@@ -26,22 +26,18 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
      */
     protected $model;
 
+    /**
+     * @var FragmentTemplate
+     */
+    protected $Template;
+
     public function __construct(
-        private CheckAuthService|ModuleModel|null $checkAuthService = null,
-        private ContaoFramework|string|null       $framework = null,
-        private ?Security                         $security = null,
-        ModuleModel|null                          $model = null,
+        private ?CheckAuthService $checkAuthService = null,
+        private ?ContaoFramework  $framework = null,
+        private ?Security         $security = null,
+        ModuleModel|null          $model = null,
     )
     {
-        if ($this->checkAuthService instanceof ModuleModel) {
-            $model = $this->checkAuthService;
-            $this->checkAuthService = null;
-        }
-
-        if (is_string($this->framework)) {
-            $this->framework = null;
-        }
-
         if ($model !== null) {
             $this->model = $model;
         }
@@ -58,10 +54,32 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
             return '';
         }
 
+        $template = $this->model->customTpl ?: 'event_reader_edit_link';
+        if ($template && !str_contains($template, '/')) {
+            $template = 'frontend_module/' . $template;
+        }
+
+        if ($template && !str_ends_with($template, '.html.twig')) {
+            $template .= '.html.twig';
+        }
+
         $this->setFragmentOptions([
             'type' => 'EventReaderEditLink',
-            'template' => $this->model->customTpl ?: 'frontend_module/event_reader_edit_link'
+            'template' => $template
         ]);
+
+        // Validate template exists or use fallback
+        try {
+            System::getContainer()->get('twig')->load($template);
+        } catch (\Twig\Error\LoaderError $e) {
+            $fallback = basename($template);
+            if ($fallback !== $template) {
+                $this->setFragmentOptions([
+                    'type' => 'EventReaderEditLink',
+                    'template' => $fallback
+                ]);
+            }
+        }
 
         return $this->__invoke($request, $this->model, 'main')->getContent();
     }
@@ -85,6 +103,7 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
 
     protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
     {
+        $this->Template = $template;
         $this->model = $model;
 
         // Return if no event has been specified
@@ -113,7 +132,7 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
         $headlineText = is_array($headline) ? $headline['value'] : $model->headline;
         $template->headline = [
             'text' => $headlineText,
-            'unit' => $model->hl ?: 'h1'
+            'tag_name' => $model->hl ?: 'h1'
         ];
         $template->hl = $model->hl ?: 'h1';
         $user = $this->security->getUser();

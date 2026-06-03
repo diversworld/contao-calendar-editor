@@ -16,13 +16,14 @@
  *
  */
 
+use Contao\Controller;
 use Diversworld\CalendarEditorBundle\Dca\ModuleDca;
 
 /*
  * Add palettes to tl_module
  */
 
-$GLOBALS['TL_DCA']['tl_module']['palettes']['calendarEdit'] = str_replace('cal_ctemplate,', '', $GLOBALS['TL_DCA']['tl_module']['palettes']['calendar']) . ';{edit_legend},cal_ctemplate,caledit_add_jumpTo; {edit_holidays},cal_holidayCalendar';
+$GLOBALS['TL_DCA']['tl_module']['palettes']['calendarEdit'] = $GLOBALS['TL_DCA']['tl_module']['palettes']['calendar'] . ';{edit_legend},caledit_add_jumpTo; {edit_holidays},cal_holidayCalendar';
 $GLOBALS['TL_DCA']['tl_module']['palettes']['EventReaderEditLink'] = '{title_legend},name,headline,type;{config_legend},cal_calendar,caledit_showDeleteLink,caledit_showCloneLink;{protected_legend:hide},protected;{expert_legend:hide},guests,customTpl,cssID,space';
 $GLOBALS['TL_DCA']['tl_module']['palettes']['EventHiddenList']     = $GLOBALS['TL_DCA']['tl_module']['palettes']['eventlist'];
 $GLOBALS['TL_DCA']['tl_module']['palettes']['EventEditor']         = '{title_legend},name,headline,type;{redirect_legend},jumpTo;'
@@ -32,8 +33,6 @@ $GLOBALS['TL_DCA']['tl_module']['palettes']['EventEditor']         = '{title_leg
     // some options from the calendarfield extension
     .'caledit_useDatePicker ;'
     . '{protected_legend:hide},protected;{expert_legend:hide},guests,customTpl,cssID,space';
-
-
 
 $GLOBALS['TL_DCA']['tl_module']['subpalettes']['caledit_usePredefinedCss'] = 'caledit_cssValues';
 $GLOBALS['TL_DCA']['tl_module']['subpalettes']['caledit_sendMail']         = 'caledit_mailRecipient';
@@ -93,10 +92,12 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_mailSubject'] = array
 $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_mailTemplate'] = array
 (
     'label'                   => &$GLOBALS['TL_LANG']['tl_module']['caledit_mailTemplate'],
-    'default' => 'frontend_module/mail_event_notification',
+    'default' => 'mail_event_notification',
     'exclude'                 => true,
     'inputType'               => 'select',
-    'options_callback' => [ModuleDca::class, 'getEventMailTemplates'],
+    'options_callback' => static function () {
+        return Controller::getTemplateGroup('mail_event');
+    },
     'eval' => ['tl_class' => 'clr w50', 'chosen' => true],
     'sql' => "varchar(255) NOT NULL default ''"
 );
@@ -113,19 +114,23 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_mandatoryfields'] = array
 
 $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_add_jumpTo'] = array
 (
-    'label'                   => &$GLOBALS['TL_LANG']['tl_module']['caledit_add_jumpTo'],
     'inputType'               => 'pageTree',
-    'eval' => ['fieldType' => 'radio'],
-    'sql' => "int unsigned NOT NULL default '0'"
+    'label' => &$GLOBALS['TL_LANG']['tl_module']['caledit_add_jumpTo'],
+    'foreignKey' => 'tl_page.title',
+    'eval' => array('mandatory' => true, 'fieldType' => 'radio'),
+    'sql' => "int(10) unsigned NOT NULL default 0",
+    'relation' => array('type' => 'belongsTo', 'load' => 'lazy')
 );
 
 $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_template'] = array
 (
     'label'                   => &$GLOBALS['TL_LANG']['tl_module']['caledit_template'],
-    'default' => 'frontend_module/event_edit_default',
+    'default' => 'event_edit_default',
     'exclude' => true,
     'inputType'               => 'select',
-    'options_callback' => [ModuleDca::class, 'getEventEditTemplates'],
+    'options_callback' => static function () {
+        return Controller::getTemplateGroup('event_');
+    },
     'eval' => ['tl_class' => 'clr w50', 'chosen' => true],
     'sql' => "varchar(255) NOT NULL default ''"
 );
@@ -133,10 +138,12 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_template'] = array
 $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_clone_template'] = array
 (
     'label'                   => &$GLOBALS['TL_LANG']['tl_module']['caledit_clone_template'],
-    'default' => 'frontend_module/event_edit_duplicate',
+    'default' => 'event_edit_duplicate',
     'exclude' => true,
     'inputType'               => 'select',
-    'options_callback' => [ModuleDca::class, 'getEventEditTemplates'],
+    'options_callback' => static function () {
+        return Controller::getTemplateGroup('event_');
+    },
     'eval' => ['tl_class' => 'w50', 'chosen' => true],
     'sql' => "varchar(255) NOT NULL default ''"
 );
@@ -144,10 +151,12 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_clone_template'] = array
 $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_delete_template'] = array
 (
     'label'                   => &$GLOBALS['TL_LANG']['tl_module']['caledit_delete_template'],
-    'default' => 'frontend_module/event_edit_delete',
+    'default' => 'event_edit_delete',
     'exclude' => true,
     'inputType'               => 'select',
-    'options_callback' => [ModuleDca::class, 'getEventEditTemplates'],
+    'options_callback' => static function () {
+        return Controller::getTemplateGroup('event_');
+    },
     'eval' => ['tl_class' => 'w50', 'chosen' => true],
     'sql' => "varchar(255) NOT NULL default ''"
 );
@@ -155,7 +164,6 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_delete_template'] = array
 $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_tinMCEtemplate'] = array
 (
     'label'                   => &$GLOBALS['TL_LANG']['tl_module']['caledit_tinMCEtemplate'],
-    //'default'                 => 'tinyFrontendMinimal',
     'default'                 => 'wuppdi',
     'inputType'               => 'select',
     'options_callback' => [ModuleDca::class, 'getConfigFiles'],
@@ -219,7 +227,6 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['cal_holidayCalendar'] = array
     'sql'                     => "blob NULL"
 );
 
-
 // some settings for the CalendarField DatePicker (copied from the DCA there)
 $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_useDatePicker'] = array
 (
@@ -240,8 +247,6 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_dateDirection'] = array
     'eval' => ['tl_class' => 'w50'],
     'sql'                     => "varchar(10) NOT NULL default ''"
 );
-
-
 
 $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_dateIncludeCSSTheme'] = array
 (
@@ -272,9 +277,3 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_dateImageSRC'] = array
     'eval' => ['files' => true, 'fieldType' => 'radio', 'filesOnly' => true, 'tl_class' => 'clr'],
     'sql'                     => "binary(16) NULL"
 );
-
-//'caledit_dateDirection,
-//caledit_dateIncludeCSS, caledit_dateIncludeCSSTheme,
-//caledit_dateImage, caledit_dateImageSRC'
-
-

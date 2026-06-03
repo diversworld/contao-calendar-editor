@@ -10,9 +10,9 @@
         <span class="time">({{ time }})</span>
     {% endif %}
 
-    {% if editRef %}
+    {% if editRef is defined and editRef %}
         <span class="editlink">
-            <a href="{{ editRef }}" title="{{ editTitle }}"> {{ editLabel }} </a>
+            <a href="{{ editRef }}" title="{{ editTitle|default('') }}"> {{ editLabel|default('') }} </a>
         </span>
     {% endif %}
 </div>

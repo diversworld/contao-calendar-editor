@@ -12,9 +12,8 @@ use Symfony\Bundle\SecurityBundle\Security;
 class ModuleDca
 {
     public function __construct(
-        private readonly ContaoFramework  $framework,
-        private readonly Security         $security,
-        private readonly string           $projectDir,
+        private readonly ContaoFramework $framework,
+        private readonly Security        $security,
     )
     {
     }
@@ -30,15 +29,21 @@ class ModuleDca
     #[AsCallback(table: 'tl_module', target: 'fields.cal_template.options')]
     public function getEventTemplates(): array
     {
-        $templates = $this->getTwigTemplates('event_');
-        $calTemplates = $this->getTwigTemplates('cal_');
-        return array_merge($templates, $calTemplates);
+        return $this->getTwigTemplates('event_');
     }
 
     #[AsCallback(table: 'tl_module', target: 'fields.cal_ctemplate.options')]
     public function getCalendarGridTemplates(): array
     {
-        return $this->getTwigTemplates('cal_');
+        $templates = $this->getTwigTemplates('cal_');
+
+        if (!in_array('cal_default_edit', $templates, true)) {
+            $templates[] = 'cal_default_edit';
+        }
+
+        sort($templates);
+
+        return $templates;
     }
 
     #[AsCallback(table: 'tl_module', target: 'fields.caledit_mailTemplate.options')]
@@ -49,22 +54,7 @@ class ModuleDca
 
     private function getTwigTemplates(string $prefix): array
     {
-        $templates = $this->framework->getAdapter(Controller::class)->getTemplateGroup($prefix);
-
-        // Scan bundle templates in frontend_module subfolder
-        $templateDir = dirname(__DIR__, 2) . '/contao/templates/frontend_module';
-        if (is_dir($templateDir)) {
-            $files = scandir($templateDir);
-            foreach ($files as $file) {
-                if (str_starts_with($file, $prefix) && str_ends_with($file, '.html.twig')) {
-                    $name = substr($file, 0, -10);
-                    $key = 'frontend_module/' . $name;
-                    $templates[$key] = $name;
-                }
-            }
-        }
-
-        return $templates;
+        return $this->framework->getAdapter(Controller::class)->getTemplateGroup($prefix);
     }
 
     #[AsCallback(table: 'tl_module', target: 'fields.caledit_cssValues.eval.columnsCallback')]
@@ -119,7 +109,7 @@ class ModuleDca
     public function getConfigFiles(): array
     {
         $arrConfigs = [];
-        $tinyMCEPath = $this->projectDir . '/vendor/diversworld/contao-calendar-editor/contao/tinyMCE/';
+        $tinyMCEPath = dirname(__DIR__, 2) . '/contao/tinyMCE/';
 
         if (is_dir($tinyMCEPath)) {
             $arrFiles = scandir($tinyMCEPath);

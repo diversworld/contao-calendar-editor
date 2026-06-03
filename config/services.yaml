@@ -3,8 +3,6 @@ services:
     autowire: true
     autoconfigure: true
     public: false
-    bind:
-      $projectDir: '%kernel.project_dir%'
 
   Diversworld\CalendarEditorBundle\:
     resource: '../src/'
