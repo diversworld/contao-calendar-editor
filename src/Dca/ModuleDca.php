@@ -18,34 +18,6 @@ class ModuleDca
     {
     }
 
-    #[AsCallback(table: 'tl_module', target: 'fields.caledit_template.options')]
-    #[AsCallback(table: 'tl_module', target: 'fields.caledit_clone_template.options')]
-    #[AsCallback(table: 'tl_module', target: 'fields.caledit_delete_template.options')]
-    public function getEventEditTemplates(): array
-    {
-        return $this->getTwigTemplates('event_edit_');
-    }
-
-    #[AsCallback(table: 'tl_module', target: 'fields.cal_template.options')]
-    public function getEventTemplates(): array
-    {
-        return $this->getTwigTemplates('event_');
-    }
-
-    #[AsCallback(table: 'tl_module', target: 'fields.cal_ctemplate.options')]
-    public function getCalendarGridTemplates(): array
-    {
-        $templates = $this->getTwigTemplates('cal_');
-
-        if (!in_array('cal_default_edit', $templates, true)) {
-            $templates[] = 'cal_default_edit';
-        }
-
-        sort($templates);
-
-        return $templates;
-    }
-
     #[AsCallback(table: 'tl_module', target: 'fields.caledit_mailTemplate.options')]
     public function getEventMailTemplates(): array
     {

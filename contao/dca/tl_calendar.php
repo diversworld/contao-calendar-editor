@@ -49,10 +49,11 @@ $GLOBALS['TL_DCA']['tl_calendar']['fields']['caledit_onlyFuture'] = array
 $GLOBALS['TL_DCA']['tl_calendar']['fields']['caledit_jumpTo'] = array
 (
 	'label'                   => &$GLOBALS['TL_LANG']['tl_calendar']['caledit_jumpTo'],
-	'exclude'                 => true,
-	'inputType'               => 'pageTree',
-	'eval'                    => array('fieldType'=>'radio'),
-    'sql' => "int unsigned NOT NULL default '0'"
+    'inputType'               => 'pageTree',
+    'foreignKey' => 'tl_page.title',
+    'eval' => array('mandatory' => true, 'fieldType' => 'radio'),
+    'sql' => "int(10) unsigned NOT NULL default 0",
+    'relation' => array('type' => 'belongsTo', 'load' => 'lazy')
 );
 
 $GLOBALS['TL_DCA']['tl_calendar']['fields']['caledit_loginRequired'] = array

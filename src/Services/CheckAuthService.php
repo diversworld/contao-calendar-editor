@@ -22,7 +22,7 @@ class CheckAuthService
         $tokenChecker = System::getContainer()->get('contao.security.token_checker');
 
         if ($user === null && $tokenChecker->hasFrontendUser()) {
-            $user = $tokenChecker->getFrontendUser();
+            $user = FrontendUser::getInstance();
         }
 
         if ($user instanceof FrontendUser) {
@@ -51,7 +51,7 @@ class CheckAuthService
         $tokenChecker = System::getContainer()->get('contao.security.token_checker');
 
         if ($user === null && $tokenChecker->hasFrontendUser()) {
-            $user = $tokenChecker->getFrontendUser();
+            $user = FrontendUser::getInstance();
         }
 
         if ($user instanceof FrontendUser) {
@@ -118,7 +118,7 @@ class CheckAuthService
         }
 
         if ($user === null && $tokenChecker->hasFrontendUser()) {
-            $user = $tokenChecker->getFrontendUser();
+            $user = FrontendUser::getInstance();
         }
 
         if ($isUserAdmin && (!$event->disable_editing)) {

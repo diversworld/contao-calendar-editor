@@ -118,11 +118,15 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
         $this->cal_holidayCalendar = $this->sortOutProtected($this->cal_holidayCalendar);
         $this->cal_holidayCalendar = array_map('\intval', $this->cal_holidayCalendar);
 
-        // Get the current month and year from request
         $year = $request->query->get('year');
         $month = $request->query->get('month');
 
-        if (!$year || !$month) {
+        if (!$year && is_string($month) && preg_match('/^\d{6}$/', $month)) {
+            $year = substr($month, 0, 4);
+            $month = substr($month, 4, 2);
+        }
+
+        if (!$year || !$month || !preg_match('/^\d{4}$/', (string) $year) || !preg_match('/^\d{1,2}$/', (string) $month)) {
             $year = date('Y');
             $month = date('m');
         }
@@ -132,15 +136,25 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
         // Prefixes logic
         $this->cal_ctemplate = $model->cal_ctemplate ?: 'cal_default_edit';
 
-        // Create the sub-template context for the calendar grid
+        $intYear = (int) date('Y', $this->Date->tstamp);
+        $intMonth = (int) date('m', $this->Date->tstamp);
+
+        $prevMonth = ($intMonth === 1) ? 12 : ($intMonth - 1);
+        $prevYear = ($intMonth === 1) ? ($intYear - 1) : $intYear;
+        $nextMonth = ($intMonth === 12) ? 1 : ($intMonth + 1);
+        $nextYear = ($intMonth === 12) ? ($intYear + 1) : $intYear;
+
+        $previousLabel = ($GLOBALS['TL_LANG']['MONTHS'][$prevMonth - 1] ?? Date::parse('F', mktime(0, 0, 0, $prevMonth, 1, $prevYear))) . ' ' . $prevYear;
+        $nextLabel = ($GLOBALS['TL_LANG']['MONTHS'][$nextMonth - 1] ?? Date::parse('F', mktime(0, 0, 0, $nextMonth, 1, $nextYear))) . ' ' . $nextYear;
+
         $subTemplateData = [
-            'prevHref' => $request->getPathInfo() . '?year=' . date('Y', $this->Date->prevMonth) . '&month=' . date('m', $this->Date->prevMonth),
-            'nextHref' => $request->getPathInfo() . '?year=' . date('Y', $this->Date->nextMonth) . '&month=' . date('m', $this->Date->nextMonth),
-            'prevTitle' => Date::parse('F Y', $this->Date->prevMonth),
-            'nextTitle' => Date::parse('F Y', $this->Date->nextMonth),
-            'prevLink' => ($GLOBALS['TL_LANG']['MSC']['cal_previous'] ?? 'Previous month') . ' ' . Date::parse('F Y', $this->Date->prevMonth),
-            'nextLink' => Date::parse('F Y', $this->Date->nextMonth) . ' ' . ($GLOBALS['TL_LANG']['MSC']['cal_next'] ?? 'Next month'),
-            'current' => Date::parse('F Y', $this->Date->tstamp),
+            'prevHref' => $request->getPathInfo() . '?month=' . $prevYear . str_pad((string) $prevMonth, 2, '0', STR_PAD_LEFT),
+            'nextHref' => $request->getPathInfo() . '?month=' . $nextYear . str_pad((string) $nextMonth, 2, '0', STR_PAD_LEFT),
+            'prevTitle' => $previousLabel,
+            'nextTitle' => $nextLabel,
+            'prevLink' => ($GLOBALS['TL_LANG']['MSC']['cal_previous'] ?? 'Previous month') . ' ' . $previousLabel,
+            'nextLink' => $nextLabel . ' ' . ($GLOBALS['TL_LANG']['MSC']['cal_next'] ?? 'Next month'),
+            'current' => ($GLOBALS['TL_LANG']['MONTHS'][$intMonth - 1] ?? Date::parse('F', $this->Date->tstamp)) . ' ' . $intYear,
             'days' => $this->compileDays(),
             'weeks' => $this->compileWeeks(),
         ];
@@ -173,8 +187,7 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
         }
 
         $arrResult = [];
-        $user = $this->security->getUser();
-        $frontendUser = $user instanceof FrontendUser ? $user : null;
+        $frontendUser = $this->getFrontendUser();
 
         /** @var CalendarModelEdit $calendarAdapter */
         $calendarAdapter = $this->framework->getAdapter(CalendarModelEdit::class);
@@ -185,7 +198,9 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
         }
 
         foreach ($objCalendars as $objCalendar) {
-            if (!$objCalendar->protected || ($frontendUser !== null && count(array_intersect(StringUtil::deserialize($objCalendar->groups, true), $frontendUser->groups)) > 0)) {
+            $userGroups = is_array($frontendUser?->groups) ? $frontendUser->groups : [];
+
+            if (!$objCalendar->protected || ($frontendUser !== null && count(array_intersect(StringUtil::deserialize($objCalendar->groups, true), $userGroups)) > 0)) {
                 $arrResult[] = $objCalendar->id;
             }
         }
@@ -231,8 +246,7 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
             return;
         }
 
-        $user = $this->security->getUser();
-        $frontendUser = $user instanceof FrontendUser ? $user : null;
+        $frontendUser = $this->getFrontendUser();
 
         /** @var CalendarModelEdit $calendarAdapter */
         $calendarAdapter = $this->framework->getAdapter(CalendarModelEdit::class);
@@ -246,6 +260,57 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
             $this->allowElapsedEvents = $this->allowElapsedEvents || $this->checkAuthService->isUserAuthorizedElapsedEvents($calendarModel, $frontendUser);
             $this->allowEditEvents = $this->allowEditEvents || $this->checkAuthService->isUserAuthorized($calendarModel, $frontendUser);
         }
+    }
+
+    private function getFrontendUser(): FrontendUser|null
+    {
+        $tokenChecker = System::getContainer()->get('contao.security.token_checker');
+
+        if ($tokenChecker->hasFrontendUser()) {
+            $user = FrontendUser::getInstance();
+
+            if ($user instanceof FrontendUser) {
+                return $user;
+            }
+        }
+
+        $user = $this->security?->getUser();
+
+        return $user instanceof FrontendUser ? $user : null;
+    }
+
+    private function getCalendarEditUrls(array $calendars): array
+    {
+        if (empty($calendars)) {
+            return [];
+        }
+
+        $frontendUser = $this->getFrontendUser();
+
+        /** @var CalendarModelEdit $calendarAdapter */
+        $calendarAdapter = $this->framework->getAdapter(CalendarModelEdit::class);
+        $calendarModels = $calendarAdapter->findByIds($calendars);
+
+        if ($calendarModels === null) {
+            return [];
+        }
+
+        $urls = [];
+        $urlGenerator = System::getContainer()->get('contao.routing.content_url_generator');
+
+        foreach ($calendarModels as $calendarModel) {
+            if (!$this->checkAuthService->isUserAuthorized($calendarModel, $frontendUser) || !$calendarModel->caledit_jumpTo) {
+                continue;
+            }
+
+            $page = PageModel::findByPk($calendarModel->caledit_jumpTo);
+
+            if ($page !== null) {
+                $urls[(int) $calendarModel->id] = $urlGenerator->generate($page);
+            }
+        }
+
+        return $urls;
     }
 
     private function renderCalendarTemplate(string $templateName, array $data): string
@@ -344,6 +409,7 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
 
         $arrDays = [];
         $dateFormat = Config::get('dateFormat');
+        $editUrls = $this->getCalendarEditUrls($this->cal_calendar);
         $validHolidays = is_array($this->cal_holidayCalendar) && !empty($this->cal_holidayCalendar)
             ? $this->getHolidayCalendarIDs($this->cal_holidayCalendar)
             : [];
@@ -402,8 +468,10 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
                             continue;
                         }
 
+                        $eventCalendarId = (int) $event['parent'];
+
                         if (empty($event['editRef'])) {
-                            $event['editRef'] = $addUrl !== '' ? $addUrl . '?edit=' . $event['id'] : '';
+                            $event['editRef'] = isset($editUrls[$eventCalendarId]) ? $editUrls[$eventCalendarId] . '?edit=' . $event['id'] : '';
                         }
 
                         $event['editTitle'] = $event['editTitle'] ?? ($GLOBALS['TL_LANG']['MSC']['caledit_editTitle'] ?? 'Edit event');
