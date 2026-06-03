@@ -390,7 +390,7 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
         $intColumnCount = -1;
         $intNumberOfRows = (int)ceil(($intDaysInMonth + $intFirstDayOffset) / 7);
 
-        $moduleProxy = new class($this->model) extends \Contao\Module {
+        $moduleProxy = new class($this->model) extends \Contao\Events {
             protected function compile(): void
             {
             }
