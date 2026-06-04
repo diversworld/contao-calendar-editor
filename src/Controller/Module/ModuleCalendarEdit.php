@@ -390,11 +390,7 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
         $intColumnCount = -1;
         $intNumberOfRows = (int)ceil(($intDaysInMonth + $intFirstDayOffset) / 7);
 
-        $moduleProxy = new class($this->model) extends \Contao\Events {
-            protected function compile(): void
-            {
-            }
-        };
+        $moduleProxy = new \Contao\ModuleCalendar($this->model);
 
         $calendarEventsGenerator = System::getContainer()->get('contao_calendar.generator.calendar_events');
         $allEvents = $calendarEventsGenerator->getAllEvents(
