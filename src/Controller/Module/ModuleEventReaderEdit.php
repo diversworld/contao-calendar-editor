@@ -18,9 +18,11 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bundle\SecurityBundle\Security;
 
-#[AsFrontendModule('EventReaderEditLink', category: 'calendar', template: 'frontend_module/event_reader_edit_link')]
+#[AsFrontendModule(ModuleEventReaderEdit::TYPE, category: 'calendar')]
 class ModuleEventReaderEdit extends AbstractFrontendModuleController
 {
+    public const TYPE = 'event_reader_edit';
+
     /**
      * @var ModuleModel|null
      */
@@ -55,28 +57,25 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
         }
 
         $template = $this->model->customTpl ?: 'event_reader_edit_link';
+
         if ($template && !str_contains($template, '/')) {
             $template = 'frontend_module/' . $template;
         }
 
-        if ($template && !str_ends_with($template, '.html.twig')) {
-            $template .= '.html.twig';
-        }
-
         $this->setFragmentOptions([
-            'type' => 'EventReaderEditLink',
-            'template' => $template
+            'type' => self::TYPE,
+            'template' => $template,
         ]);
 
         // Validate template exists or use fallback
         try {
-            System::getContainer()->get('twig')->load($template);
+            System::getContainer()->get('twig')->load('@Contao/' . $template . '.html.twig');
         } catch (\Twig\Error\LoaderError $e) {
             $fallback = basename($template);
             if ($fallback !== $template) {
                 $this->setFragmentOptions([
-                    'type' => 'EventReaderEditLink',
-                    'template' => $fallback
+                    'type' => self::TYPE,
+                    'template' => 'frontend_module/event_reader_edit_link',
                 ]);
             }
         }
@@ -105,6 +104,7 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
     {
         $this->Template = $template;
         $this->model = $model;
+        $this->addFrontendModuleTemplateDefaults($template, $model);
 
         // Return if no event has been specified
         if (!$request->query->has('auto_item') && !($request->attributes->has('_route_params') && isset($request->attributes->get('_route_params')['auto_item']))) {
@@ -121,20 +121,20 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
             return new Response('');
         }
 
-        $template->editRef = '';
+        $template->set('editRef', '');
 
         $cssID = StringUtil::deserialize($model->cssID, true);
-        $template->class = trim('mod_' . $model->type . ' ' . ($model->class ?: '') . ' ' . ($cssID[1] ?? ''));
-        $template->cssID = $cssID[0] ?? '';
-        $template->type = $model->type;
+        $template->set('class', trim('mod_' . $model->type . ' ' . ($model->class ?: '') . ' ' . ($cssID[1] ?? '')));
+        $template->set('cssID', $cssID[0] ?? '');
+        $template->set('type', $model->type);
 
         $headline = StringUtil::deserialize($model->headline);
         $headlineText = is_array($headline) ? $headline['value'] : $model->headline;
-        $template->headline = [
+        $template->set('headline', [
             'text' => $headlineText,
             'tag_name' => $model->hl ?: 'h1'
-        ];
-        $template->hl = $model->hl ?: 'h1';
+        ]);
+        $template->set('hl', $model->hl ?: 'h1');
         $user = $this->security->getUser();
 
         if (!$user instanceof FrontendUser) {
@@ -157,8 +157,8 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
         }
 
         if ($objEvent === null) {
-            $template->error = $GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed'];
-            $template->error_class = 'error';
+            $template->set('error', $GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed']);
+            $template->set('error_class', 'error');
             return $template->getResponse();
         }
 
@@ -184,45 +184,67 @@ class ModuleEventReaderEdit extends AbstractFrontendModuleController
                 if ($objPage !== null) {
                     $strUrl = System::getContainer()->get('contao.routing.content_url_generator')->generate($objPage);
 
-                    $template->editRef = $strUrl . '?edit=' . $objEvent->id;
-                    $template->editLabel = $GLOBALS['TL_LANG']['MSC']['caledit_editLabel'];
-                    $template->editTitle = $GLOBALS['TL_LANG']['MSC']['caledit_editTitle'];
+                    $template->set('editRef', $strUrl . '?edit=' . $objEvent->id);
+                    $template->set('editLabel', $GLOBALS['TL_LANG']['MSC']['caledit_editLabel']);
+                    $template->set('editTitle', $GLOBALS['TL_LANG']['MSC']['caledit_editTitle']);
 
                     if ($model->caledit_showCloneLink) {
-                        $template->cloneRef = $strUrl . '?clone=' . $objEvent->id;
-                        $template->cloneLabel = $GLOBALS['TL_LANG']['MSC']['caledit_cloneLabel'];
-                        $template->cloneTitle = $GLOBALS['TL_LANG']['MSC']['caledit_cloneTitle'];
+                        $template->set('cloneRef', $strUrl . '?clone=' . $objEvent->id);
+                        $template->set('cloneLabel', $GLOBALS['TL_LANG']['MSC']['caledit_cloneLabel']);
+                        $template->set('cloneTitle', $GLOBALS['TL_LANG']['MSC']['caledit_cloneTitle']);
                     }
                     if ($model->caledit_showDeleteLink) {
-                        $template->deleteRef = $strUrl . '?delete=' . $objEvent->id;
-                        $template->deleteLabel = $GLOBALS['TL_LANG']['MSC']['caledit_deleteLabel'];
-                        $template->deleteTitle = $GLOBALS['TL_LANG']['MSC']['caledit_deleteTitle'];
+                        $template->set('deleteRef', $strUrl . '?delete=' . $objEvent->id);
+                        $template->set('deleteLabel', $GLOBALS['TL_LANG']['MSC']['caledit_deleteLabel']);
+                        $template->set('deleteTitle', $GLOBALS['TL_LANG']['MSC']['caledit_deleteTitle']);
                     }
                 }
             } else {
                 if (!$isUserAuthorized) {
-                    $template->error_class = 'error';
-                    $template->error = $GLOBALS['TL_LANG']['MSC']['caledit_UnauthorizedUser'];
+                    $template->set('error_class', 'error');
+                    $template->set('error', $GLOBALS['TL_LANG']['MSC']['caledit_UnauthorizedUser']);
                     return $template->getResponse();
                 }
 
                 if ($objEvent->disable_editing) {
-                    $template->error = $GLOBALS['TL_LANG']['MSC']['caledit_DisabledEvent'];
-                    $template->error_class = 'error';
+                    $template->set('error', $GLOBALS['TL_LANG']['MSC']['caledit_DisabledEvent']);
+                    $template->set('error_class', 'error');
                 } else {
                     if (!$authorizedElapsedEvents) {
-                        $template->error = $GLOBALS['TL_LANG']['MSC']['caledit_NoPast'];
+                        $template->set('error', $GLOBALS['TL_LANG']['MSC']['caledit_NoPast']);
                     } else {
-                        $template->error = $GLOBALS['TL_LANG']['MSC']['caledit_OnlyUser'];
+                        $template->set('error', $GLOBALS['TL_LANG']['MSC']['caledit_OnlyUser']);
                     }
-                    $template->error_class = 'error';
+                    $template->set('error_class', 'error');
                 }
             }
         } else {
-            $template->error_class = 'error';
-            $template->error = $GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed'];
+            $template->set('error_class', 'error');
+            $template->set('error', $GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed']);
         }
 
         return $template->getResponse();
+    }
+
+    private function addFrontendModuleTemplateDefaults(FragmentTemplate $template, ModuleModel $model): void
+    {
+        $cssID = StringUtil::deserialize($model->cssID, true);
+        $headline = StringUtil::deserialize($model->headline);
+        $data = $model->row();
+
+        $data += [
+            'subline' => '',
+            'headline_inline' => '',
+            'subheadline' => '',
+        ];
+
+        $template->set('type', $model->type ?: self::TYPE);
+        $template->set('element_html_id', $cssID[0] ?? null);
+        $template->set('element_css_classes', trim('mod_' . $model->type . ' ' . ($model->class ?: '') . ' ' . ($cssID[1] ?? '')));
+        $template->set('headline', [
+            'text' => is_array($headline) ? ($headline['value'] ?? '') : (string)$model->headline,
+            'tag_name' => is_array($headline) ? ($headline['unit'] ?? 'h1') : ($model->hl ?: 'h1'),
+        ]);
+        $template->set('data', $data);
     }
 }

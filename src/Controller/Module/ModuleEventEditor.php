@@ -20,7 +20,6 @@ use Contao\FormRadio;
 use Contao\FormSelect;
 use Contao\FormText;
 use Contao\FormTextarea;
-use Contao\FrontendTemplate;
 use Contao\FrontendUser;
 use Contao\ModuleModel;
 use Contao\PageModel;
@@ -36,9 +35,11 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
-#[AsFrontendModule('EventEditor', category: 'calendar', template: 'frontend_module/event_edit_default')]
+#[AsFrontendModule(ModuleEventEditor::TYPE, category: 'calendar', template: 'frontend_module/event_editor')]
 class ModuleEventEditor extends AbstractFrontendModuleController
 {
+    public const TYPE = 'event_editor';
+
     /**
      * @var array
      */
@@ -261,6 +262,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
     {
         $this->Template = $template;
         $this->model = $model;
+        $this->addFrontendModuleTemplateDefaults($template, $model);
 
         // Map model properties to $this for internal method access
         $this->cal_calendar = $model->cal_calendar;
@@ -297,39 +299,27 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->customTpl = $model->customTpl;
 
         $cssID = StringUtil::deserialize($model->cssID, true);
-        $this->Template->class = trim('mod_' . $model->type . ' ' . ($model->class ?: '') . ' ' . ($cssID[1] ?? ''));
-        $this->Template->cssID = $cssID[0] ?? '';
-        $this->Template->type = $model->type;
-
-        // Ensure variables from getResponse argument $template are copied to $this->Template if it was changed
-        if ($this->Template !== $template) {
-            $this->Template->headline = $template->headline;
-            $this->Template->hl = $template->hl;
-            $this->Template->InfoMessage = $template->InfoMessage;
-            $this->Template->FatalError = $template->FatalError;
-            $this->Template->CurrentEventLink = $template->CurrentEventLink;
-            $this->Template->CurrentTitle = $template->CurrentTitle;
-            $this->Template->CurrentDate = $template->CurrentDate;
-            $this->Template->CurrentPublishedInfo = $template->CurrentPublishedInfo;
-        }
+        $template->set('class', trim('mod_' . $model->type . ' ' . ($model->class ?: '') . ' ' . ($cssID[1] ?? '')));
+        $template->set('cssID', $cssID[0] ?? '');
+        $template->set('type', $model->type);
 
         // Map headline and hl to template
         $headline = StringUtil::deserialize($model->headline);
         $headlineText = is_array($headline) ? $headline['value'] : $model->headline;
-        $this->Template->headline = [
+        $template->set('headline', [
             'text' => $headlineText,
             'tag_name' => $model->hl ?: 'h1'
-        ];
-        $this->Template->hl = $model->hl ?: 'h1';
-        $this->Template->InfoMessage = '';
-        $this->Template->FatalError = '';
-        $this->Template->classList = '';
-        $this->Template->ContentWarning = '';
-        $this->Template->ImageWarning = '';
-        $this->Template->action = $request->getUri();
-        $this->Template->messages = '';
-        $this->Template->submit = $GLOBALS['TL_LANG']['MSC']['caledit_saveData'] ?? 'Submit';
-        $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
+        ]);
+        $template->set('hl', $model->hl ?: 'h1');
+        $template->set('InfoMessage', '');
+        $template->set('FatalError', '');
+        $template->set('classList', '');
+        $template->set('ContentWarning', '');
+        $template->set('ImageWarning', '');
+        $template->set('action', $request->getUri());
+        $template->set('messages', '');
+        $template->set('submit', $GLOBALS['TL_LANG']['MSC']['caledit_saveData'] ?? 'Submit');
+        $template->set('requestToken', System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue());
 
         // Deserialisieren und Kalender filtern
         $this->cal_calendar = $this->sortOutProtected(StringUtil::deserialize($this->cal_calendar, true));
@@ -368,16 +358,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             return $response;
         }
 
-        // Validate template exists or use fallback for FragmentTemplate
-        $currentTemplate = $template->getName();
-        try {
-            System::getContainer()->get('twig')->load($currentTemplate);
-        } catch (\Twig\Error\LoaderError $e) {
-            $fallback = basename($currentTemplate);
-            if ($fallback !== $currentTemplate) {
-                $template->setName($fallback);
-            }
-        }
+        $template->setName($this->resolveFrontendModuleTemplate($template->getName(), 'event_editor'));
 
         return $template->getResponse();
     }
@@ -460,25 +441,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             return '';
         }
 
-        $template = $model->customTpl ?: ($model->caledit_template ?: 'event_edit_default');
-
-        if ($template && !str_contains($template, '/')) {
-            $template = 'frontend_module/' . $template;
-        }
-
-        if ($template && !str_ends_with($template, '.html.twig')) {
-            $template .= '.html.twig';
-        }
-
-        try {
-            $this->Template = System::getContainer()->get('twig')->load($template);
-        } catch (\Exception $e) {
-            // Fallback
-        }
+        $template = $this->resolveFrontendModuleTemplate($model->customTpl ?: $model->caledit_template, 'event_editor');
 
         $this->setFragmentOptions([
-            'type' => 'EventEditor',
-            'template' => $template
+            'type' => self::TYPE,
+            'template' => $template,
         ]);
 
         return $this->__invoke($request, $model, 'main')->getContent();
@@ -620,6 +587,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         // if no event is specified: ok, FE user can add new events :D
         if (!$eventID) {
             return true;
+        }
+
+        if ($currentObjectData === null) {
+            $this->errorString = $GLOBALS['TL_LANG']['MSC']['caledit_unexpected'] ?? 'Event not found.';
+            return false;
         }
 
         $objCalendar = $this->getCalendarObjectFromPID($currentObjectData->pid);
@@ -799,21 +771,59 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
     public function addDatePicker(&$field): void
     {
-        $field['inputType'] = 'calendarfield';
-        if (strlen($this->caledit_dateIncludeCSSTheme) > 0) {
+        $field['inputType'] = $field['inputType'] ?? 'text';
+        $field['eval'] = $field['eval'] ?? [];
+        $field['eval']['datepicker'] = true;
+        $field['eval']['class'] = trim(($field['eval']['class'] ?? '') . ' caledit-datepicker');
+        $field['eval']['data-caledit-datepicker'] = '1';
+        $field['eval']['tl_class'] = trim(($field['eval']['tl_class'] ?? '') . ' wizard');
+
+        if (strlen((string)$this->caledit_dateIncludeCSSTheme) > 0) {
             $field['eval']['dateIncludeCSS'] = '1';
             $field['eval']['dateIncludeCSSTheme'] = $this->caledit_dateIncludeCSSTheme;
+            $field['eval']['data-caledit-datepicker-theme'] = $this->caledit_dateIncludeCSSTheme;
         } else {
             $field['eval']['dateIncludeCSS'] = '0';
             $field['eval']['dateIncludeCSSTheme'] = '';
         }
         $field['eval']['dateDirection'] = $this->caledit_dateDirection;
+        $field['eval']['data-caledit-date-direction'] = $this->caledit_dateDirection ?: 'all';
         if ($this->caledit_dateImage) {
             $field['eval']['dateImage'] = '1';
+            $field['eval']['data-caledit-date-image'] = '1';
         }
         if ($this->caledit_dateImageSRC) {
             $field['eval']['dateImageSRC'] = $this->caledit_dateImageSRC;
+            $field['eval']['data-caledit-date-image-src'] = $this->caledit_dateImageSRC;
         }
+    }
+
+    protected function denyEventAccess(?string $message = null): void
+    {
+        $this->Template->FatalError = $message ?: ($this->errorString ?: ($GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed'] ?? 'No edit permission.'));
+        $this->Template->InfoClass = 'tl_error';
+    }
+
+    protected function createFormWidget(array $field)
+    {
+        $attributes = $field;
+
+        if (isset($field['eval']) && is_array($field['eval'])) {
+            $attributes = array_merge($attributes, $field['eval']);
+            unset($attributes['eval']);
+        }
+
+        $attributes['id'] = $attributes['id'] ?? $field['name'];
+
+        return match ($field['inputType']) {
+            'checkbox' => new FormCheckbox($attributes),
+            'radio' => new FormRadio($attributes),
+            'select' => new FormSelect($attributes),
+            'text' => new FormText($attributes),
+            'textarea' => new FormTextarea($attributes),
+            'captcha' => new FormCaptcha($attributes),
+            default => throw new \InvalidArgumentException("Ungültiger inputType: " . $field['inputType']),
+        };
     }
 
     public function aliasExists(string $suggestedAlias): bool
@@ -886,11 +896,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $endTimeStr = $eventData['endTime'];
 
         if (trim($startTimeStr) == '') {
-            $eventData['addTime'] = '';
+            $eventData['addTime'] = 0;
             $eventData['startTime'] = $startDate->tstamp;
             $eventData['endTime'] = $endDate->tstamp;
         } else {
-            $eventData['addTime'] = '1';
+            $eventData['addTime'] = 1;
             $startTime = new Date($eventData['startDate'] . ' ' . $startTimeStr, Config::get('dateFormat') . ' ' . Config::get('timeFormat'));
             $eventData['startTime'] = $startTime->tstamp;
 
@@ -913,6 +923,8 @@ class ModuleEventEditor extends AbstractFrontendModuleController
                 $eventData = $hookObject->{$callback[1]}($eventData);
             }
         }
+
+        $eventData = $this->normalizeEventDataForDatabase($eventData);
 
         if (empty($oldId)) {
             // Neuer Eintrag
@@ -953,6 +965,23 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         //$this->calendar->generateFeed($eventData['pid']);
 
         return $returnID;
+    }
+
+    private function normalizeEventDataForDatabase(array $eventData): array
+    {
+        foreach (['addTime', 'featured', 'addImage', 'overwriteMeta', 'fullsize', 'recurring', 'addEnclosure', 'target', 'published'] as $field) {
+            if (array_key_exists($field, $eventData)) {
+                $eventData[$field] = empty($eventData[$field]) ? 0 : 1;
+            }
+        }
+
+        foreach (['pid', 'author', 'startTime', 'endTime', 'startDate', 'endDate', 'repeatEnd', 'recurrences', 'jumpTo', 'articleId'] as $field) {
+            if (array_key_exists($field, $eventData) && $eventData[$field] === '') {
+                $eventData[$field] = 0;
+            }
+        }
+
+        return $eventData;
     }
 
     protected function handleEdit($editID, $currentEventObject): ?Response
@@ -1007,6 +1036,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $currentUrl = $currentRequest->getUri();
 
         if ($editID) {
+            if (!$this->checkUserEditRights($this->User, $editID, $currentEventObject)) {
+                $this->denyEventAccess();
+                return null;
+            }
+
             // get a proper Content-Element
             $contentID = '';
             $this->getContentElements($editID, $contentID, $NewContentData);
@@ -1102,62 +1136,36 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             $newEventData['endTime'] = $objTime->time; // Konvertiere Timestamp zu "HH:mm"
         }
 
+        $fields['startDate'] = [
+            'name' => 'startDate',
+            'id' => 'startDate',
+            'label' => $GLOBALS['TL_LANG']['MSC']['caledit_startdate'],
+            'inputType' => 'text',
+            'value' => $newEventData['startDate'],
+            'eval' => [
+                'rgxp' => 'date',
+                'mandatory' => true,
+                'decodeEntities' => true
+            ]
+        ];
+
+        $fields['endDate'] = [
+            'name' => 'endDate',
+            'id' => 'endDate',
+            'label' => $GLOBALS['TL_LANG']['MSC']['caledit_enddate'],
+            'inputType' => 'text',
+            'value' => $newEventData['endDate'] ?? null,
+            'eval' => [
+                'rgxp' => 'date',
+                'mandatory' => false,
+                'maxlength' => 128,
+                'decodeEntities' => true
+            ]
+        ];
+
         if ($this->caledit_useDatePicker) {
-            $fields['startDate'] = [
-                'name' => 'startDate',
-                'id'    => 'startDate',
-                'label' => $GLOBALS['TL_LANG']['MSC']['caledit_startdate'],
-                'inputType' => 'text',
-                'value' => $newEventData['startDate'],
-                'eval' => [
-                    'rgxp' => 'date',
-                    'mandatory' => true,
-                    'decodeEntities' => true,
-                    'datepicker' => true
-                ]
-            ];
-
-            $fields['endDate'] = [
-                'name' => 'endDate',
-                'id'    => 'endDate',
-                'label' => $GLOBALS['TL_LANG']['MSC']['caledit_enddate'],
-                'inputType' => 'text',
-                'value' => $newEventData['endDate'] ?? null,
-                'eval' => [
-                    'rgxp' => 'date',
-                    'mandatory' => false,
-                    'maxlength' => 128,
-                    'decodeEntities' => true,
-                    'datepicker' => true
-                ]
-            ];
-        } else {
-            $fields['startDate'] = [
-                'name' => 'startDate',
-                'id'    => 'startDate',
-                'label' => $GLOBALS['TL_LANG']['MSC']['caledit_startdate'],
-                'inputType' => 'text',
-                'value' => $newEventData['startDate'],
-                'eval' => [
-                    'rgxp' => 'date',
-                    'mandatory' => true,
-                    'decodeEntities' => true
-                ]
-            ];
-
-            $fields['endDate'] = [
-                'name' => 'endDate',
-                'id'    => 'endDate',
-                'label' => $GLOBALS['TL_LANG']['MSC']['caledit_enddate'],
-                'inputType' => 'text',
-                'value' => $newEventData['endDate'] ?? null,
-                'eval' => [
-                    'rgxp' => 'date',
-                    'mandatory' => false,
-                    'maxlength' => 128,
-                    'decodeEntities' => true
-                ]
-            ];
+            $this->addDatePicker($fields['startDate']);
+            $this->addDatePicker($fields['endDate']);
         }
 
         $fields['startTime'] = [
@@ -1376,23 +1384,8 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $doNotSubmit = false;
         foreach ($fields as $field) {
             $field['eval']['required'] = $field['eval']['mandatory'] ?? false;
-            if ($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit') {
-                $rgxp = $field['eval']['rgxp'] ?? '';
-                if (($rgxp == 'date' || $rgxp == 'time' || $rgxp == 'datim') && $currentRequest->request->get($field['name']) != '') {
-                    $objDate = new Date($currentRequest->request->get($field['name']), Config::get($rgxp . 'Format'));
-                    $field['value'] = $objDate->tstamp;
-                }
-            }
 
-            $objWidget = match ($field['inputType']) {
-                'checkbox' => new FormCheckbox($field),
-                'radio' => new FormRadio($field),
-                'select' => new FormSelect($field),
-                'text' => new FormText($field),
-                'textarea' => new FormTextarea($field),
-                'captcha' => new FormCaptcha($field),
-                default => throw new \InvalidArgumentException("Ungültiger inputType: " . $field['inputType']),
-            };
+            $objWidget = $this->createFormWidget($field);
 
             if ($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit') {
                 $objWidget->validate();
@@ -1406,6 +1399,14 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $validDate = $this->checkValidDate($newEventData['pid'] ?? 0, $arrWidgets['startDate'], $arrWidgets['endDate']);
         if (!$validDate) {
             $doNotSubmit = true;
+        }
+
+        if ($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit') {
+            foreach (['startDate', 'endDate', 'startTime', 'endTime'] as $fieldName) {
+                if (isset($arrWidgets[$fieldName])) {
+                    $newEventData[$fieldName] = $arrWidgets[$fieldName]->value;
+                }
+            }
         }
 
         if ((!$doNotSubmit) && ($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit')) {
@@ -1441,7 +1442,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
         $currentRequest = $this->requestStack->getCurrentRequest();
 
-        $templateName = $this->caledit_delete_template ?: 'frontend_module/event_edit_delete';
+        $templateName = $this->resolveFrontendModuleTemplate($this->caledit_delete_template, 'event_edit_delete');
         $this->Template->setName($templateName);
 
         // Initialize all template variables to avoid Twig errors
@@ -1481,6 +1482,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             return null;
         }
 
+        if ($currentEventObject === null || !$this->checkUserEditRights($this->User, $currentEventObject->id, $currentEventObject)) {
+            $this->denyEventAccess();
+            return null;
+        }
+
         // Edit- und Clone-Links erstellen
         $currentUrl = $currentRequest->getUri();
         $this->Template->editRef = str_replace('?delete=', '?edit=', $currentUrl);
@@ -1508,8 +1514,9 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $arrWidgets = [];
         $doNotSubmit = false;
 
-        $objWidget = new FormCaptcha($captchaField);
+        $objWidget = $this->createFormWidget($captchaField);
         if ($currentRequest->request->get('FORM_SUBMIT') === 'caledit_submit') {
+            $objWidget->validate();
             if ($objWidget->hasErrors()) {
                 $doNotSubmit = true;
             }
@@ -1569,7 +1576,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->initializeServices();
         $currentRequest = $this->requestStack->getCurrentRequest();
 
-        $templateName = $this->caledit_clone_template ?: 'frontend_module/event_edit_duplicate';
+        $templateName = $this->resolveFrontendModuleTemplate($this->caledit_clone_template, 'event_edit_duplicate');
         $this->Template->setName($templateName);
 
         // Initialize all template variables to avoid Twig errors
@@ -1603,6 +1610,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         ];
         $this->Template->hl = $this->model->hl ?: 'h1';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
+
+        if ($currentEventObject === null || !$this->checkUserEditRights($this->User, $currentEventObject->id, $currentEventObject)) {
+            $this->denyEventAccess();
+            return null;
+        }
 
         $currentID = $currentEventObject->id;
         $currentEventData = array();
@@ -1685,10 +1697,10 @@ class ModuleEventEditor extends AbstractFrontendModuleController
                 'eval' => array('rgxp' => 'date', 'mandatory' => false, 'maxlength' => 128, 'decodeEntities' => true)
             );
 
-            /*if ($this->caledit_useDatePicker) {
+            if ($this->caledit_useDatePicker) {
                 $this->addDatePicker($fields['start' . $i]);
                 $this->addDatePicker($fields['end' . $i]);
-            }*/
+            }
         }
 
         $hasFrontendUser =  $this->tokenChecker->hasFrontendUser();
@@ -1746,25 +1758,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         foreach ($fields as $field) {
             $field['eval']['required'] = $field['eval']['mandatory'];
 
-            // from http://pastebin.com/HcjkHLQK
-            // via https://github.com/contao/core/issues/5086
-            // Convert date formats into timestamps (check the eval setting first -> #3063)
-            if ($currentRequest->request->get('FORM_SUBMIT') === 'caledit_submit') {
-                $rgxp = $field['eval']['rgxp'] ?? '';
-                if (($rgxp == 'date' || $rgxp == 'time' || $rgxp == 'datim') && $field['value'] != '') {
-                    $objDate = new Date($currentRequest->request->get($field['name']), Config::get($rgxp . 'Format'));
-                    $field['value'] = $objDate->tstamp;
-                }
-            }
-
-            $objWidget = match ($field['inputType']) {
-                'checkbox' => new FormCheckbox($field),
-                'radio' => new FormRadio($field),
-                'select' => new FormSelect($field),
-                'text' => new FormText($field),
-                'textarea' => new FormTextarea($field),
-                default => throw new \InvalidArgumentException("Ungültiger inputType: " . $field['inputType']),
-            };
+            $objWidget = $this->createFormWidget($field);
 
             // Validate widget
             if ($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit') {
@@ -1791,6 +1785,13 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             if ((!$allDatesAllowed) and ($newDate) and ($newDate < time())) {
                 $arrWidgets['start' . $i]->addError($GLOBALS['TL_LANG']['MSC']['caledit_formErrorElapsedDate']);
                 $doNotSubmit = true;
+            }
+        }
+
+        if ($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit') {
+            for ($i = 1; $i <= 10; $i++) {
+                $newDates['start' . $i] = $arrWidgets['start' . $i]->value;
+                $newDates['end' . $i] = $arrWidgets['end' . $i]->value;
             }
         }
 
@@ -1888,16 +1889,16 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
         $mailSubject = $this->caledit_mailSubject;
         // Template-Name basierend auf Aktion bestimmen
-        $templateName = $this->caledit_mailTemplate ?: 'mail_event_notification';
+        $templateName = $this->resolveFrontendModuleTemplate($this->caledit_mailTemplate, 'mail_event_notification');
 
         if ($editID) {
             if ($editID == -1) {
                 // Wenn ein Event gelöscht wird
-                $templateName = 'frontend_module/mail_event_subject_delete';
+                $templateName = $this->resolveFrontendModuleTemplate('mail_event_subject_delete', 'mail_event_subject_delete');
                 $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectDelete'], $host);
             } else {
                 // Wenn ein Event geändert wird
-                $templateName = 'frontend_module/mail_event_subject_edit';
+                $templateName = $this->resolveFrontendModuleTemplate('mail_event_subject_edit', 'mail_event_subject_edit');
                 $notification->subject = sprintf($GLOBALS['TL_LANG']['MSC']['caledit_MailSubjectEdit'], $host);
             }
         } else {
@@ -1905,7 +1906,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             $notification->subject = $mailSubject;
         }
 
-        // Template laden und rendern mit Contao-Template-System
+        // Template laden und rendern mit Twig
         $templateContent = '';
         $renderData = [
             'host' => $host,
@@ -1922,22 +1923,23 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         ];
 
         try {
-            $objTemplate = new FrontendTemplate($templateName);
-            $objTemplate->setData($renderData);
-            $templateContent = $objTemplate->parse();
+            $templateContent = $this->renderView(
+                '@Contao/' . $templateName . '.html.twig',
+                array_merge(
+                    [
+                        'type' => $this->model?->type ?? self::TYPE,
+                        'element_html_id' => null,
+                        'element_css_classes' => '',
+                        'headline' => [
+                            'text' => '',
+                            'tag_name' => 'h1',
+                        ],
+                    ],
+                    $renderData
+                )
+            );
         } catch (\Exception $e) {
-            // Fallback für den Fall, dass frontend_module/ fehlt
-            if (!str_starts_with($templateName, 'frontend_module/')) {
-                try {
-                    $objTemplate = new FrontendTemplate('frontend_module/' . $templateName);
-                    $objTemplate->setData($renderData);
-                    $templateContent = $objTemplate->parse();
-                } catch (\Exception $e2) {
-                    throw new RuntimeException('Could not find or render template ' . $templateName, 0, $e2);
-                }
-            } else {
-                throw new RuntimeException('Could not find or render template ' . $templateName, 0, $e);
-            }
+            throw new RuntimeException('Could not find or render template ' . $templateName, 0, $e);
         }
 
         $notification->text = $templateContent;
@@ -1951,7 +1953,73 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         }
     }
 
-    /**
-     * Generate module
-     */
+    private function addFrontendModuleTemplateDefaults(FragmentTemplate $template, ModuleModel $model): void
+    {
+        $cssID = StringUtil::deserialize($model->cssID, true);
+        $headline = StringUtil::deserialize($model->headline);
+        $data = $model->row();
+
+        $data += [
+            'subline' => '',
+            'headline_inline' => '',
+            'subheadline' => '',
+        ];
+
+        $template->set('type', $model->type ?: self::TYPE);
+        $template->set('element_html_id', $cssID[0] ?? null);
+        $template->set('element_css_classes', trim('mod_' . $model->type . ' ' . ($model->class ?: '') . ' ' . ($cssID[1] ?? '')));
+        $template->set('headline', [
+            'text' => is_array($headline) ? ($headline['value'] ?? '') : (string)$model->headline,
+            'tag_name' => is_array($headline) ? ($headline['unit'] ?? 'h1') : ($model->hl ?: 'h1'),
+        ]);
+        $template->set('data', $data);
+    }
+
+    private function resolveFrontendModuleTemplate(?string $templateName, string $fallback): string
+    {
+        $templateName = $this->normalizeFrontendModuleTemplate($templateName ?: $fallback);
+        $fallback = $this->normalizeFrontendModuleTemplate($fallback);
+
+        try {
+            System::getContainer()->get('twig')->load('@Contao/' . $templateName . '.html.twig');
+
+            return $templateName;
+        } catch (\Twig\Error\LoaderError) {
+            System::getContainer()->get('twig')->load('@Contao/' . $fallback . '.html.twig');
+
+            return $fallback;
+        }
+    }
+
+    private function normalizeFrontendModuleTemplate(string $templateName): string
+    {
+        $templateName = trim($templateName);
+
+        if (str_starts_with($templateName, '@Contao/')) {
+            $templateName = substr($templateName, 8);
+        }
+
+        if (str_ends_with($templateName, '.html.twig')) {
+            $templateName = substr($templateName, 0, -10);
+        }
+
+        if (str_ends_with($templateName, '.html.Twig')) {
+            $templateName = substr($templateName, 0, -10);
+        }
+
+        if (str_ends_with($templateName, '.html5')) {
+            $templateName = substr($templateName, 0, -6);
+        }
+
+        $templateName = ltrim($templateName, '/');
+
+        if (!str_contains($templateName, '/')) {
+            $templateName = 'frontend_module/' . $templateName;
+        }
+
+        return match ($templateName) {
+            'frontend_module/event_edit_default' => 'frontend_module/event_editor',
+            default => $templateName,
+        };
+    }
 }

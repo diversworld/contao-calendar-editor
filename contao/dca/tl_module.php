@@ -23,10 +23,10 @@ use Diversworld\CalendarEditorBundle\Dca\ModuleDca;
  * Add palettes to tl_module
  */
 
-$GLOBALS['TL_DCA']['tl_module']['palettes']['calendarEdit'] = $GLOBALS['TL_DCA']['tl_module']['palettes']['calendar'] . ';{edit_legend},caledit_add_jumpTo; {edit_holidays},cal_holidayCalendar';
-$GLOBALS['TL_DCA']['tl_module']['palettes']['EventReaderEditLink'] = '{title_legend},name,headline,type;{config_legend},cal_calendar,caledit_showDeleteLink,caledit_showCloneLink;{protected_legend:hide},protected;{expert_legend:hide},guests,customTpl,cssID,space';
-$GLOBALS['TL_DCA']['tl_module']['palettes']['EventHiddenList']     = $GLOBALS['TL_DCA']['tl_module']['palettes']['eventlist'];
-$GLOBALS['TL_DCA']['tl_module']['palettes']['EventEditor']         = '{title_legend},name,headline,type;{redirect_legend},jumpTo;'
+$GLOBALS['TL_DCA']['tl_module']['palettes']['calendar_edit'] = $GLOBALS['TL_DCA']['tl_module']['palettes']['calendar'] . ';{edit_legend},caledit_add_jumpTo;{edit_holidays},cal_holidayCalendar';
+$GLOBALS['TL_DCA']['tl_module']['palettes']['event_reader_edit'] = '{title_legend},name,headline,type;{config_legend},cal_calendar,caledit_showDeleteLink,caledit_showCloneLink;{protected_legend:hide},protected;{expert_legend:hide},guests,customTpl,cssID,space';
+$GLOBALS['TL_DCA']['tl_module']['palettes']['event_hidden_list'] = $GLOBALS['TL_DCA']['tl_module']['palettes']['eventlist'];
+$GLOBALS['TL_DCA']['tl_module']['palettes']['event_editor'] = '{title_legend},name,headline,type;{redirect_legend},jumpTo;'
     .'{config_legend},cal_calendar,caledit_mandatoryfields,caledit_alternateCSSLabel,caledit_usePredefinedCss;'
     .'{caledit_setting_publish},caledit_allowPublish,caledit_allowDelete,caledit_allowClone,caledit_sendMail,caledit_mailSubject,caledit_mailTemplate;'
     .'{template_legend},caledit_template,caledit_delete_template, caledit_clone_template, caledit_tinMCEtemplate,'
@@ -95,9 +95,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_mailTemplate'] = array
     'default' => 'mail_event_notification',
     'exclude'                 => true,
     'inputType'               => 'select',
-    'options_callback' => static function () {
-        return Controller::getTemplateGroup('mail_event');
-    },
+    'options_callback' => [ModuleDca::class, 'getEventMailTemplates'],
     'eval' => ['tl_class' => 'clr w50', 'chosen' => true],
     'sql' => "varchar(255) NOT NULL default ''"
 );
@@ -125,12 +123,10 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_add_jumpTo'] = array
 $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_template'] = array
 (
     'label'                   => &$GLOBALS['TL_LANG']['tl_module']['caledit_template'],
-    'default' => 'event_edit_default',
+    'default' => 'event_editor',
     'exclude' => true,
     'inputType'               => 'select',
-    'options_callback' => static function () {
-        return Controller::getTemplateGroup('event_');
-    },
+    'options_callback' => [ModuleDca::class, 'getEventEditorTemplates'],
     'eval' => ['tl_class' => 'clr w50', 'chosen' => true],
     'sql' => "varchar(255) NOT NULL default ''"
 );
@@ -141,9 +137,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_clone_template'] = array
     'default' => 'event_edit_duplicate',
     'exclude' => true,
     'inputType'               => 'select',
-    'options_callback' => static function () {
-        return Controller::getTemplateGroup('event_');
-    },
+    'options_callback' => [ModuleDca::class, 'getEventEditorTemplates'],
     'eval' => ['tl_class' => 'w50', 'chosen' => true],
     'sql' => "varchar(255) NOT NULL default ''"
 );
@@ -154,9 +148,7 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_delete_template'] = array
     'default' => 'event_edit_delete',
     'exclude' => true,
     'inputType'               => 'select',
-    'options_callback' => static function () {
-        return Controller::getTemplateGroup('event_');
-    },
+    'options_callback' => [ModuleDca::class, 'getEventEditorTemplates'],
     'eval' => ['tl_class' => 'w50', 'chosen' => true],
     'sql' => "varchar(255) NOT NULL default ''"
 );
@@ -214,8 +206,20 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['caledit_showCloneLink'] = array
     'sql'					  => "char(1) NOT NULL default ''"
 );
 
+$GLOBALS['TL_DCA']['tl_module']['fields']['cal_ctemplate']['options_callback'] = static function (): array {
+    $options = Controller::getTemplateGroup('cal_');
+    $options['cal_default_edit'] = 'cal_default_edit';
+
+    return $options;
+};
 
 $GLOBALS['TL_DCA']['tl_module']['fields']['cal_template']['sql'] = "varchar(255) NOT NULL default ''";
+$GLOBALS['TL_DCA']['tl_module']['fields']['cal_template']['options_callback'] = static function (): array {
+    $options = Controller::getTemplateGroup('event_');
+    $options['event_list_hidden_layout'] = 'event_list_hidden_layout';
+
+    return $options;
+};
 
 $GLOBALS['TL_DCA']['tl_module']['fields']['cal_holidayCalendar'] = array
 (

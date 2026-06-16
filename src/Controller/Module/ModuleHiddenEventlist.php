@@ -18,9 +18,11 @@ use RuntimeException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-#[AsFrontendModule('EventHiddenList', category: 'calendar', template: 'frontend_module/mod_event_list_hidden')]
+#[AsFrontendModule(ModuleHiddenEventlist::TYPE, category: 'calendar')]
 class ModuleHiddenEventlist extends AbstractFrontendModuleController
 {
+    public const TYPE = 'event_hidden_list';
+
     /**
      * @var ModuleModel|null
      */
@@ -53,8 +55,8 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
         }
 
         $this->setFragmentOptions([
-            'type' => 'EventHiddenList',
-            'template' => $this->model->customTpl ?: 'frontend_module/mod_event_list_hidden'
+            'type' => self::TYPE,
+            'template' => $this->model->customTpl ?: 'frontend_module/event_hidden_list',
         ]);
 
         return $this->__invoke($request, $this->model, 'main')->getContent();
@@ -79,22 +81,14 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
     {
         $this->Template = $template;
         $this->model = $model;
-
-        $headline = StringUtil::deserialize($model->headline);
-        $template->headline = is_array($headline) ? ($headline['value'] ?? '') : $model->headline;
-        $template->hl = $model->hl ?: 'h1';
-
-        $cssID = StringUtil::deserialize($model->cssID, true);
-        $template->class = trim('mod_' . $model->type . ' ' . ($model->class ?: '') . ' ' . ($cssID[1] ?? ''));
-        $template->cssID = $cssID[0] ?? '';
-        $template->type = $model->type;
+        $this->addFrontendModuleTemplateDefaults($template, $model);
 
         $calendars = StringUtil::deserialize($model->cal_calendar, true);
         $calendars = array_map('\intval', $calendars);
 
         if (empty($calendars)) {
-            $template->events = [];
-            $template->emptyMsg = $GLOBALS['TL_LANG']['MSC']['emptyEventList'] ?? 'No events found.';
+            $template->set('events', []);
+            $template->set('emptyMsg', $GLOBALS['TL_LANG']['MSC']['emptyEventList'] ?? 'No events found.');
             return $template->getResponse();
         }
 
@@ -117,11 +111,33 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
             }
         }
 
-        $template->events = $hiddenEvents;
-        $template->hiddenEvents = $hiddenEvents;
-        $template->emptyMsg = $GLOBALS['TL_LANG']['MSC']['emptyEventList'] ?? 'No events found.';
+        $template->set('events', $hiddenEvents);
+        $template->set('hiddenEvents', $hiddenEvents);
+        $template->set('emptyMsg', $GLOBALS['TL_LANG']['MSC']['emptyEventList'] ?? 'No events found.');
 
         return $template->getResponse();
+    }
+
+    private function addFrontendModuleTemplateDefaults(FragmentTemplate $template, ModuleModel $model): void
+    {
+        $cssID = StringUtil::deserialize($model->cssID, true);
+        $headline = StringUtil::deserialize($model->headline);
+        $data = $model->row();
+
+        $data += [
+            'subline' => '',
+            'headline_inline' => '',
+            'subheadline' => '',
+        ];
+
+        $template->set('type', $model->type ?: self::TYPE);
+        $template->set('element_html_id', $cssID[0] ?? null);
+        $template->set('element_css_classes', trim('mod_' . $model->type . ' ' . ($model->class ?: '') . ' ' . ($cssID[1] ?? '')));
+        $template->set('headline', [
+            'text' => is_array($headline) ? ($headline['value'] ?? '') : (string)$model->headline,
+            'tag_name' => is_array($headline) ? ($headline['unit'] ?? 'h1') : ($model->hl ?: 'h1'),
+        ]);
+        $template->set('data', $data);
     }
 
     protected function renderEvent(CalendarEventsModel $event, CalendarModel $calendar, ModuleModel $model): string
@@ -181,7 +197,21 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
 
         foreach (array_unique($candidates) as $candidate) {
             try {
-                return $this->renderView('@Contao/' . $candidate . '.html.twig', $data);
+                return $this->renderView(
+                    '@Contao/' . $candidate . '.html.twig',
+                    array_merge(
+                        [
+                            'type' => $this->model?->type ?? self::TYPE,
+                            'element_html_id' => null,
+                            'element_css_classes' => '',
+                            'headline' => [
+                                'text' => '',
+                                'tag_name' => 'h1',
+                            ],
+                        ],
+                        $data,
+                    )
+                );
             } catch (\Throwable $e) {
                 $lastException = $e;
             }
@@ -203,6 +233,10 @@ class ModuleHiddenEventlist extends AbstractFrontendModuleController
         }
 
         if (str_ends_with($templateName, '.html.twig')) {
+            return substr($templateName, 0, -10);
+        }
+
+        if (str_ends_with($templateName, '.html.Twig')) {
             return substr($templateName, 0, -10);
         }
 

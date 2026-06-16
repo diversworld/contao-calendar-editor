@@ -4,9 +4,9 @@ namespace Diversworld\CalendarEditorBundle\Dca;
 
 use Contao\BackendUser;
 use Contao\CalendarModel;
-use Contao\Controller;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\CoreBundle\Framework\ContaoFramework;
+use Contao\CoreBundle\Twig\Finder\FinderFactory;
 use Symfony\Bundle\SecurityBundle\Security;
 
 class ModuleDca
@@ -14,19 +14,46 @@ class ModuleDca
     public function __construct(
         private readonly ContaoFramework $framework,
         private readonly Security        $security,
+        private readonly FinderFactory $twigFinderFactory,
     )
     {
+    }
+
+    #[AsCallback(table: 'tl_module', target: 'fields.caledit_template.options')]
+    #[AsCallback(table: 'tl_module', target: 'fields.caledit_clone_template.options')]
+    #[AsCallback(table: 'tl_module', target: 'fields.caledit_delete_template.options')]
+    public function getEventEditorTemplates(): array
+    {
+        return $this->getTwigTemplates('event_') + [
+                'event_editor' => 'event_editor',
+                'event_edit_delete' => 'event_edit_delete',
+                'event_edit_duplicate' => 'event_edit_duplicate',
+            ];
     }
 
     #[AsCallback(table: 'tl_module', target: 'fields.caledit_mailTemplate.options')]
     public function getEventMailTemplates(): array
     {
-        return $this->getTwigTemplates('mail_event_');
+        return $this->getTwigTemplates('mail_event_') + [
+                'mail_event_notification' => 'mail_event_notification',
+                'mail_event_subject_delete' => 'mail_event_subject_delete',
+                'mail_event_subject_edit' => 'mail_event_subject_edit',
+            ];
     }
 
     private function getTwigTemplates(string $prefix): array
     {
-        return $this->framework->getAdapter(Controller::class)->getTemplateGroup($prefix);
+        $options = [];
+        $pattern = '/^frontend_module\/' . preg_quote($prefix, '/') . '/';
+
+        foreach ($this->twigFinderFactory->create()->identifierRegex($pattern)->extension('html.twig')->asIdentifierList() as $identifier) {
+            $name = basename($identifier);
+            $options[$name] = $name;
+        }
+
+        ksort($options);
+
+        return $options;
     }
 
     #[AsCallback(table: 'tl_module', target: 'fields.caledit_cssValues.eval.columnsCallback')]

@@ -3,6 +3,7 @@
 namespace Diversworld\CalendarEditorBundle\Controller\Module;
 
 use Contao\Config;
+use Contao\ModuleCalendar;
 use Contao\ModuleModel;
 use Contao\Date;
 use Contao\FrontendUser;
@@ -23,9 +24,11 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use RuntimeException;
 
-#[AsFrontendModule('calendarEdit', category: 'calendar', template: 'mod_calendar')]
+#[AsFrontendModule(ModuleCalendarEdit::TYPE, category: 'calendar', template: 'frontend_module/calendar_edit')]
 class ModuleCalendarEdit extends AbstractFrontendModuleController
 {
+    public const TYPE = 'calendar_edit';
+
     /**
      * @var ModuleModel|null
      */
@@ -86,7 +89,6 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
     protected $Template;
 
     public function __construct(
-        private readonly ?ScopeMatcher     $scopeMatcher = null,
         private readonly ?RequestStack     $requestStack = null,
         private readonly ?CheckAuthService $checkAuthService = null,
         private readonly ?ContaoFramework  $framework = null,
@@ -101,8 +103,8 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
 
     protected function getResponse(FragmentTemplate $template, ModuleModel $model, Request $request): Response
     {
-        $this->Template = $template;
         $this->model = $model;
+        $this->addFrontendModuleTemplateDefaults($template, $model);
 
         // Map properties to $this for internal use to avoid dynamic property warnings
         $this->cal_calendar = StringUtil::deserialize($model->cal_calendar, true);
@@ -159,22 +161,31 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
             'weeks' => $this->compileWeeks(),
         ];
 
-        $template->calendar = $this->renderCalendarTemplate($this->cal_ctemplate, $subTemplateData);
-
-        // Standard variables for block_searchable
-        $template->class = trim('mod_' . $model->type . ' ' . ($model->class ?: ''));
-
-        $cssID = StringUtil::deserialize($model->cssID, true);
-        $template->cssID = $cssID[0] ?? '';
-        if (isset($cssID[1]) && $cssID[1] !== '') {
-            $template->class .= ' ' . $cssID[1];
-        }
-        $template->type = $model->type;
-        $headline = StringUtil::deserialize($model->headline);
-        $template->headline = is_array($headline) ? ($headline['value'] ?? '') : $model->headline;
-        $template->hl = $model->hl ?: 'h1';
+        $template->set('calendar', $this->renderCalendarTemplate($this->cal_ctemplate, $subTemplateData));
 
         return $template->getResponse();
+    }
+
+    private function addFrontendModuleTemplateDefaults(FragmentTemplate $template, ModuleModel $model): void
+    {
+        $cssID = StringUtil::deserialize($model->cssID, true);
+        $headline = StringUtil::deserialize($model->headline);
+        $data = $model->row();
+
+        $data += [
+            'subline' => '',
+            'headline_inline' => '',
+            'subheadline' => '',
+        ];
+
+        $template->set('type', $model->type ?: self::TYPE);
+        $template->set('element_html_id', $cssID[0] ?? null);
+        $template->set('element_css_classes', trim('mod_' . $model->type . ' ' . ($model->class ?: '') . ' ' . ($cssID[1] ?? '')));
+        $template->set('headline', [
+            'text' => is_array($headline) ? ($headline['value'] ?? '') : (string)$model->headline,
+            'tag_name' => is_array($headline) ? ($headline['unit'] ?? 'h1') : ($model->hl ?: 'h1'),
+        ]);
+        $template->set('data', $data);
     }
 
     /**
@@ -316,10 +327,6 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
     private function renderCalendarTemplate(string $templateName, array $data): string
     {
         $templateName = $this->normalizeTemplateName($templateName);
-        $templateName = match ($templateName) {
-            'frontend_module/cal_default_edit' => 'cal_default_edit',
-            default => $templateName,
-        };
 
         $candidates = [$templateName];
 
@@ -331,7 +338,21 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
 
         foreach (array_unique($candidates) as $candidate) {
             try {
-                return $this->renderView('@Contao/' . $candidate . '.html.twig', $data);
+                return $this->renderView(
+                    '@Contao/' . $candidate . '.html.twig',
+                    array_merge(
+                        [
+                            'type' => $this->model?->type ?? self::TYPE,
+                            'element_html_id' => null,
+                            'element_css_classes' => '',
+                            'headline' => [
+                                'text' => '',
+                                'tag_name' => 'h1',
+                            ],
+                        ],
+                        $data,
+                    )
+                );
             } catch (\Throwable $e) {
                 $lastException = $e;
             }
@@ -353,6 +374,10 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
         }
 
         if (str_ends_with($templateName, '.html.twig')) {
+            return substr($templateName, 0, -10);
+        }
+
+        if (str_ends_with($templateName, '.html.Twig')) {
             return substr($templateName, 0, -10);
         }
 
@@ -390,8 +415,7 @@ class ModuleCalendarEdit extends AbstractFrontendModuleController
         $intColumnCount = -1;
         $intNumberOfRows = (int)ceil(($intDaysInMonth + $intFirstDayOffset) / 7);
 
-        $moduleProxy = new \Contao\ModuleCalendar($this->model);
-
+        $moduleProxy = $this->model !== null ? new ModuleCalendar($this->model) : null;
         $calendarEventsGenerator = System::getContainer()->get('contao_calendar.generator.calendar_events');
         $allEvents = $calendarEventsGenerator->getAllEvents(
             $this->cal_calendar,
