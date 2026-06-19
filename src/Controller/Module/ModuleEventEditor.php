@@ -1071,7 +1071,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         if ($this->caledit_useDatePicker) {
             $fields['startDate'] = [
                 'name' => 'startDate',
-                'id'    => 'startDate',
+                'id' => 'startDate',
                 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_startdate'],
                 'inputType' => 'text',
                 'value' => $newEventData['startDate'],
@@ -1085,7 +1085,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
             $fields['endDate'] = [
                 'name' => 'endDate',
-                'id'    => 'endDate',
+                'id' => 'endDate',
                 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_enddate'],
                 'inputType' => 'text',
                 'value' => $newEventData['endDate'] ?? null,
@@ -1100,7 +1100,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         } else {
             $fields['startDate'] = [
                 'name' => 'startDate',
-                'id'    => 'startDate',
+                'id' => 'startDate',
                 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_startdate'],
                 'inputType' => 'text',
                 'value' => $newEventData['startDate'],
@@ -1113,7 +1113,7 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
             $fields['endDate'] = [
                 'name' => 'endDate',
-                'id'    => 'endDate',
+                'id' => 'endDate',
                 'label' => $GLOBALS['TL_LANG']['MSC']['caledit_enddate'],
                 'inputType' => 'text',
                 'value' => $newEventData['endDate'] ?? null,
