@@ -2,7 +2,6 @@
 
 namespace Diversworld\CalendarEditorBundle\Controller\Module;
 
-use Contao\BackendTemplate;
 use Contao\CalendarEventsModel;
 use Contao\CalendarModel;
 use Contao\Config;
@@ -589,11 +588,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             return true;
         }
 
-        if ($currentObjectData === null) {
-            $this->errorString = $GLOBALS['TL_LANG']['MSC']['caledit_unexpected'] ?? 'Event not found.';
-            return false;
-        }
-
         $objCalendar = $this->getCalendarObjectFromPID($currentObjectData->pid);
 
         if (NULL === $objCalendar) {
@@ -771,59 +765,21 @@ class ModuleEventEditor extends AbstractFrontendModuleController
 
     public function addDatePicker(&$field): void
     {
-        $field['inputType'] = $field['inputType'] ?? 'text';
-        $field['eval'] = $field['eval'] ?? [];
-        $field['eval']['datepicker'] = true;
-        $field['eval']['class'] = trim(($field['eval']['class'] ?? '') . ' caledit-datepicker');
-        $field['eval']['data-caledit-datepicker'] = '1';
-        $field['eval']['tl_class'] = trim(($field['eval']['tl_class'] ?? '') . ' wizard');
-
-        if (strlen((string)$this->caledit_dateIncludeCSSTheme) > 0) {
+        $field['inputType'] = 'calendarfield';
+        if (strlen($this->caledit_dateIncludeCSSTheme) > 0) {
             $field['eval']['dateIncludeCSS'] = '1';
             $field['eval']['dateIncludeCSSTheme'] = $this->caledit_dateIncludeCSSTheme;
-            $field['eval']['data-caledit-datepicker-theme'] = $this->caledit_dateIncludeCSSTheme;
         } else {
             $field['eval']['dateIncludeCSS'] = '0';
             $field['eval']['dateIncludeCSSTheme'] = '';
         }
         $field['eval']['dateDirection'] = $this->caledit_dateDirection;
-        $field['eval']['data-caledit-date-direction'] = $this->caledit_dateDirection ?: 'all';
         if ($this->caledit_dateImage) {
             $field['eval']['dateImage'] = '1';
-            $field['eval']['data-caledit-date-image'] = '1';
         }
         if ($this->caledit_dateImageSRC) {
             $field['eval']['dateImageSRC'] = $this->caledit_dateImageSRC;
-            $field['eval']['data-caledit-date-image-src'] = $this->caledit_dateImageSRC;
         }
-    }
-
-    protected function denyEventAccess(?string $message = null): void
-    {
-        $this->Template->FatalError = $message ?: ($this->errorString ?: ($GLOBALS['TL_LANG']['MSC']['caledit_NoEditAllowed'] ?? 'No edit permission.'));
-        $this->Template->InfoClass = 'tl_error';
-    }
-
-    protected function createFormWidget(array $field)
-    {
-        $attributes = $field;
-
-        if (isset($field['eval']) && is_array($field['eval'])) {
-            $attributes = array_merge($attributes, $field['eval']);
-            unset($attributes['eval']);
-        }
-
-        $attributes['id'] = $attributes['id'] ?? $field['name'];
-
-        return match ($field['inputType']) {
-            'checkbox' => new FormCheckbox($attributes),
-            'radio' => new FormRadio($attributes),
-            'select' => new FormSelect($attributes),
-            'text' => new FormText($attributes),
-            'textarea' => new FormTextarea($attributes),
-            'captcha' => new FormCaptcha($attributes),
-            default => throw new \InvalidArgumentException("Ungültiger inputType: " . $field['inputType']),
-        };
     }
 
     public function aliasExists(string $suggestedAlias): bool
@@ -896,11 +852,11 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $endTimeStr = $eventData['endTime'];
 
         if (trim($startTimeStr) == '') {
-            $eventData['addTime'] = 0;
+            $eventData['addTime'] = '';
             $eventData['startTime'] = $startDate->tstamp;
             $eventData['endTime'] = $endDate->tstamp;
         } else {
-            $eventData['addTime'] = 1;
+            $eventData['addTime'] = '1';
             $startTime = new Date($eventData['startDate'] . ' ' . $startTimeStr, Config::get('dateFormat') . ' ' . Config::get('timeFormat'));
             $eventData['startTime'] = $startTime->tstamp;
 
@@ -923,8 +879,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
                 $eventData = $hookObject->{$callback[1]}($eventData);
             }
         }
-
-        $eventData = $this->normalizeEventDataForDatabase($eventData);
 
         if (empty($oldId)) {
             // Neuer Eintrag
@@ -965,23 +919,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         //$this->calendar->generateFeed($eventData['pid']);
 
         return $returnID;
-    }
-
-    private function normalizeEventDataForDatabase(array $eventData): array
-    {
-        foreach (['addTime', 'featured', 'addImage', 'overwriteMeta', 'fullsize', 'recurring', 'addEnclosure', 'target', 'published'] as $field) {
-            if (array_key_exists($field, $eventData)) {
-                $eventData[$field] = empty($eventData[$field]) ? 0 : 1;
-            }
-        }
-
-        foreach (['pid', 'author', 'startTime', 'endTime', 'startDate', 'endDate', 'repeatEnd', 'recurrences', 'jumpTo', 'articleId'] as $field) {
-            if (array_key_exists($field, $eventData) && $eventData[$field] === '') {
-                $eventData[$field] = 0;
-            }
-        }
-
-        return $eventData;
     }
 
     protected function handleEdit($editID, $currentEventObject): ?Response
@@ -1036,11 +973,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $currentUrl = $currentRequest->getUri();
 
         if ($editID) {
-            if (!$this->checkUserEditRights($this->User, $editID, $currentEventObject)) {
-                $this->denyEventAccess();
-                return null;
-            }
-
             // get a proper Content-Element
             $contentID = '';
             $this->getContentElements($editID, $contentID, $NewContentData);
@@ -1136,36 +1068,62 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             $newEventData['endTime'] = $objTime->time; // Konvertiere Timestamp zu "HH:mm"
         }
 
-        $fields['startDate'] = [
-            'name' => 'startDate',
-            'id' => 'startDate',
-            'label' => $GLOBALS['TL_LANG']['MSC']['caledit_startdate'],
-            'inputType' => 'text',
-            'value' => $newEventData['startDate'],
-            'eval' => [
-                'rgxp' => 'date',
-                'mandatory' => true,
-                'decodeEntities' => true
-            ]
-        ];
-
-        $fields['endDate'] = [
-            'name' => 'endDate',
-            'id' => 'endDate',
-            'label' => $GLOBALS['TL_LANG']['MSC']['caledit_enddate'],
-            'inputType' => 'text',
-            'value' => $newEventData['endDate'] ?? null,
-            'eval' => [
-                'rgxp' => 'date',
-                'mandatory' => false,
-                'maxlength' => 128,
-                'decodeEntities' => true
-            ]
-        ];
-
         if ($this->caledit_useDatePicker) {
-            $this->addDatePicker($fields['startDate']);
-            $this->addDatePicker($fields['endDate']);
+            $fields['startDate'] = [
+                'name' => 'startDate',
+                'id'    => 'startDate',
+                'label' => $GLOBALS['TL_LANG']['MSC']['caledit_startdate'],
+                'inputType' => 'text',
+                'value' => $newEventData['startDate'],
+                'eval' => [
+                    'rgxp' => 'date',
+                    'mandatory' => true,
+                    'decodeEntities' => true,
+                    'datepicker' => true
+                ]
+            ];
+
+            $fields['endDate'] = [
+                'name' => 'endDate',
+                'id'    => 'endDate',
+                'label' => $GLOBALS['TL_LANG']['MSC']['caledit_enddate'],
+                'inputType' => 'text',
+                'value' => $newEventData['endDate'] ?? null,
+                'eval' => [
+                    'rgxp' => 'date',
+                    'mandatory' => false,
+                    'maxlength' => 128,
+                    'decodeEntities' => true,
+                    'datepicker' => true
+                ]
+            ];
+        } else {
+            $fields['startDate'] = [
+                'name' => 'startDate',
+                'id'    => 'startDate',
+                'label' => $GLOBALS['TL_LANG']['MSC']['caledit_startdate'],
+                'inputType' => 'text',
+                'value' => $newEventData['startDate'],
+                'eval' => [
+                    'rgxp' => 'date',
+                    'mandatory' => true,
+                    'decodeEntities' => true
+                ]
+            ];
+
+            $fields['endDate'] = [
+                'name' => 'endDate',
+                'id'    => 'endDate',
+                'label' => $GLOBALS['TL_LANG']['MSC']['caledit_enddate'],
+                'inputType' => 'text',
+                'value' => $newEventData['endDate'] ?? null,
+                'eval' => [
+                    'rgxp' => 'date',
+                    'mandatory' => false,
+                    'maxlength' => 128,
+                    'decodeEntities' => true
+                ]
+            ];
         }
 
         $fields['startTime'] = [
@@ -1384,8 +1342,23 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $doNotSubmit = false;
         foreach ($fields as $field) {
             $field['eval']['required'] = $field['eval']['mandatory'] ?? false;
+            if ($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit') {
+                $rgxp = $field['eval']['rgxp'] ?? '';
+                if (($rgxp == 'date' || $rgxp == 'time' || $rgxp == 'datim') && $currentRequest->request->get($field['name']) != '') {
+                    $objDate = new Date($currentRequest->request->get($field['name']), Config::get($rgxp . 'Format'));
+                    $field['value'] = $objDate->tstamp;
+                }
+            }
 
-            $objWidget = $this->createFormWidget($field);
+            $objWidget = match ($field['inputType']) {
+                'checkbox' => new FormCheckbox($field),
+                'radio' => new FormRadio($field),
+                'select' => new FormSelect($field),
+                'text' => new FormText($field),
+                'textarea' => new FormTextarea($field),
+                'captcha' => new FormCaptcha($field),
+                default => throw new \InvalidArgumentException("Ungültiger inputType: " . $field['inputType']),
+            };
 
             if ($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit') {
                 $objWidget->validate();
@@ -1399,14 +1372,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $validDate = $this->checkValidDate($newEventData['pid'] ?? 0, $arrWidgets['startDate'], $arrWidgets['endDate']);
         if (!$validDate) {
             $doNotSubmit = true;
-        }
-
-        if ($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit') {
-            foreach (['startDate', 'endDate', 'startTime', 'endTime'] as $fieldName) {
-                if (isset($arrWidgets[$fieldName])) {
-                    $newEventData[$fieldName] = $arrWidgets[$fieldName]->value;
-                }
-            }
         }
 
         if ((!$doNotSubmit) && ($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit')) {
@@ -1482,11 +1447,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             return null;
         }
 
-        if ($currentEventObject === null || !$this->checkUserEditRights($this->User, $currentEventObject->id, $currentEventObject)) {
-            $this->denyEventAccess();
-            return null;
-        }
-
         // Edit- und Clone-Links erstellen
         $currentUrl = $currentRequest->getUri();
         $this->Template->editRef = str_replace('?delete=', '?edit=', $currentUrl);
@@ -1514,9 +1474,8 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $arrWidgets = [];
         $doNotSubmit = false;
 
-        $objWidget = $this->createFormWidget($captchaField);
+        $objWidget = new FormCaptcha($captchaField);
         if ($currentRequest->request->get('FORM_SUBMIT') === 'caledit_submit') {
-            $objWidget->validate();
             if ($objWidget->hasErrors()) {
                 $doNotSubmit = true;
             }
@@ -1611,11 +1570,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         $this->Template->hl = $this->model->hl ?: 'h1';
         $this->Template->requestToken = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
 
-        if ($currentEventObject === null || !$this->checkUserEditRights($this->User, $currentEventObject->id, $currentEventObject)) {
-            $this->denyEventAccess();
-            return null;
-        }
-
         $currentID = $currentEventObject->id;
         $currentEventData = array();
         $currentContentData = array();
@@ -1697,10 +1651,10 @@ class ModuleEventEditor extends AbstractFrontendModuleController
                 'eval' => array('rgxp' => 'date', 'mandatory' => false, 'maxlength' => 128, 'decodeEntities' => true)
             );
 
-            if ($this->caledit_useDatePicker) {
+            /*if ($this->caledit_useDatePicker) {
                 $this->addDatePicker($fields['start' . $i]);
                 $this->addDatePicker($fields['end' . $i]);
-            }
+            }*/
         }
 
         $hasFrontendUser =  $this->tokenChecker->hasFrontendUser();
@@ -1758,7 +1712,25 @@ class ModuleEventEditor extends AbstractFrontendModuleController
         foreach ($fields as $field) {
             $field['eval']['required'] = $field['eval']['mandatory'];
 
-            $objWidget = $this->createFormWidget($field);
+            // from http://pastebin.com/HcjkHLQK
+            // via https://github.com/contao/core/issues/5086
+            // Convert date formats into timestamps (check the eval setting first -> #3063)
+            if ($currentRequest->request->get('FORM_SUBMIT') === 'caledit_submit') {
+                $rgxp = $field['eval']['rgxp'] ?? '';
+                if (($rgxp == 'date' || $rgxp == 'time' || $rgxp == 'datim') && $field['value'] != '') {
+                    $objDate = new Date($currentRequest->request->get($field['name']), Config::get($rgxp . 'Format'));
+                    $field['value'] = $objDate->tstamp;
+                }
+            }
+
+            $objWidget = match ($field['inputType']) {
+                'checkbox' => new FormCheckbox($field),
+                'radio' => new FormRadio($field),
+                'select' => new FormSelect($field),
+                'text' => new FormText($field),
+                'textarea' => new FormTextarea($field),
+                default => throw new \InvalidArgumentException("Ungültiger inputType: " . $field['inputType']),
+            };
 
             // Validate widget
             if ($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit') {
@@ -1785,13 +1757,6 @@ class ModuleEventEditor extends AbstractFrontendModuleController
             if ((!$allDatesAllowed) and ($newDate) and ($newDate < time())) {
                 $arrWidgets['start' . $i]->addError($GLOBALS['TL_LANG']['MSC']['caledit_formErrorElapsedDate']);
                 $doNotSubmit = true;
-            }
-        }
-
-        if ($currentRequest->request->get('FORM_SUBMIT') == 'caledit_submit') {
-            for ($i = 1; $i <= 10; $i++) {
-                $newDates['start' . $i] = $arrWidgets['start' . $i]->value;
-                $newDates['end' . $i] = $arrWidgets['end' . $i]->value;
             }
         }
 
